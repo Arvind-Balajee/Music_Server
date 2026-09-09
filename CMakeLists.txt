@@ -55,6 +55,7 @@ endif()
 
 add_subdirectory(shared)
 add_subdirectory(server)
+add_subdirectory(sync-client)
 
 if(MUSICBOX_BUILD_TESTS)
     add_subdirectory(tests)
