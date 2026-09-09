@@ -1,0 +1,17 @@
+[server]
+address = "0.0.0.0"
+port = 8080
+
+[library]
+paths = [
+    "/media/music",
+]
+
+[database]
+path = "/var/lib/musicbox/musicbox.db"
+
+[network]
+mdns_name = "musicbox"
+
+[logging]
+level = "info"

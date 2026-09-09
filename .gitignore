@@ -1,5 +1,6 @@
 # Build output
 build/
+build-*/
 bin/
 obj/
 
@@ -23,11 +24,22 @@ Makefile
 # IDE/editor
 .vscode/
 .idea/
+*.swp
 
 # Logs
 *.log
 
 # Environment/secrets
 .env
+
+# SQLite runtime files
+*.db
+*.db-wal
+*.db-shm
+
+# Xcode
+client-ios/**/xcuserdata/
+client-ios/**/DerivedData/
+client-ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
 
 Plan.md
