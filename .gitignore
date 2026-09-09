@@ -26,6 +26,9 @@ Makefile
 .idea/
 *.swp
 
+# Claude Code agent worktrees
+.claude/worktrees/
+
 # Logs
 *.log
 
