@@ -1,0 +1,98 @@
+[Unit]
+Description=MusicBox offline music server
+Documentation=https://github.com/musicbox/musicbox docs/deployment.md deployment/README.md
+# Wi-Fi AP (hostapd/dnsmasq/NetworkManager) and mDNS (avahi-daemon) are managed
+# by their own systemd units, not by this one. musicbox-server does not need to
+# be running for the AP to come up, and vice versa; keeping them decoupled means
+# the hardening below never has to be relaxed for networking-stack reasons.
+After=network.target local-fs.target
+Wants=network-online.target
+# If the library/database lives on an external SSD, uncomment the next two
+# lines and set the mount unit name to match your fstab entry (e.g. the
+# systemd-escaped unit for /mnt/musicbox-ssd is mnt-musicbox\x2dssd.mount).
+# See deployment/README.md "External SSD mount" for how to find the exact name.
+#After=mnt-musicbox\x2dssd.mount
+#Requires=mnt-musicbox\x2dssd.mount
+
+[Service]
+Type=simple
+User=musicbox
+Group=musicbox
+
+# --config is required; install.sh writes the default config to this path.
+# Override at the CLI (ExecStart=... run --config /some/other.toml) or via a
+# drop-in (systemctl edit musicbox) if you keep the config elsewhere.
+ExecStart=/opt/musicbox/bin/musicbox-server run --config /etc/musicbox/musicbox.toml
+
+# musicbox-server binds a plain TCP port (default 8080, unprivileged) and
+# talks to the local filesystem/SQLite only. It does not touch raw sockets,
+# Wi-Fi, or any networking-stack config file, so it never needs elevated
+# capabilities and can run fully unprivileged.
+Restart=on-failure
+RestartSec=2s
+# Fail fast if it's crash-looping (e.g. bad config) rather than hammering the
+# SSD/log; adjust to taste once you've soak-tested on real hardware.
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# --- Resource limits -------------------------------------------------------
+# Conservative defaults for a Pi Zero 2 W (512 MB RAM); raise on Pi 4/5 if you
+# see the server OOM during a large library scan or many concurrent streams.
+MemoryMax=256M
+TasksMax=256
+# Uncomment on a Pi 4/5 (or if MemoryMax=256M is too tight during `scan`):
+#MemoryMax=512M
+
+# --- Security hardening -----------------------------------------------------
+# These are chosen to be as strict as possible while still allowing:
+#   - reading the music library (read-only, wherever it's mounted)
+#   - reading its own config (read-only, /etc/musicbox)
+#   - reading/writing its SQLite database + logs (/var/lib/musicbox)
+#   - binding a TCP listen socket
+# ProtectSystem=strict makes the ENTIRE filesystem read-only except what's
+# listed below (there is no built-in exemption for /media, /mnt, or /srv —
+# every library path must be listed explicitly or the scanner will hit
+# EACCES). install.sh replaces the @MUSICBOX_LIBRARY_PATH@ token below with
+# your actual configured library path(s) (default /media/musicbox/music;
+# override with `install.sh --library-path`, space-separate multiple paths).
+# If you installed this unit by hand, replace the token yourself, or add a
+# drop-in instead (`systemctl edit musicbox`) so this file stays untouched.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/musicbox
+ReadOnlyPaths=/etc/musicbox
+ReadOnlyPaths=@MUSICBOX_LIBRARY_PATH@
+
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+
+# No capabilities are needed at all (unprivileged port, no raw sockets).
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# Network access is limited to plain IPv4/IPv6 TCP; no raw/packet sockets
+# (those belong to hostapd, run under its own unit/user, not this one).
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
+
+# Trade-off, documented: if you later add CAP_NET_BIND_SERVICE to serve on
+# port 80/8080-below-1024 as root-bound-then-dropped, do it via
+# AmbientCapabilities=CAP_NET_BIND_SERVICE rather than removing NoNewPrivileges.
+# The MVP config (port 8080) does not need this.
+
+[Install]
+WantedBy=multi-user.target

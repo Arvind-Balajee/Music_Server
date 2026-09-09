@@ -1,0 +1,27 @@
+[Unit]
+# Companion to musicbox-unmanaged.conf: assigns the static AP address that
+# dhcpcd would otherwise have set (Bookworm has no dhcpcd package), then gets
+# out of the way before hostapd starts.
+#
+# Installed to: /etc/systemd/system/musicbox-ap-address.service
+# Only needed on the "keep hostapd on Bookworm" path — irrelevant if you're
+# using nm-musicbox-ap.nmconnection (NetworkManager assigns the address
+# itself in that path) or Bullseye/dhcpcd (dhcpcd.conf.append does this).
+#
+# NOT tested on real hardware; reviewed against `man systemd.service` and
+# `man ip-address`.
+Description=Assign static IP to the MusicBox AP interface (wlan0)
+Before=hostapd.service
+BindsTo=sys-subsystem-net-devices-wlan0.device
+After=sys-subsystem-net-devices-wlan0.device
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/ip addr flush dev wlan0
+ExecStart=/sbin/ip addr add 192.168.50.1/24 dev wlan0
+ExecStart=/sbin/ip link set wlan0 up
+ExecStop=/sbin/ip addr flush dev wlan0
+
+[Install]
+WantedBy=multi-user.target

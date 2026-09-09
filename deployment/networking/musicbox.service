@@ -1,0 +1,48 @@
+<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<!--
+  Avahi service definition advertising the MusicBox HTTP API/stream over
+  mDNS/DNS-SD, per Plan.md §14 ("Preferred hostname: musicbox.local").
+
+  Installed to: /etc/avahi/services/musicbox.service
+    (Avahi's own service-definition directory — NOT a systemd unit, despite
+    the .service extension and the confusing name clash with
+    deployment/systemd/musicbox.service, which is a completely separate file
+    installed to a completely different path. Avahi picks up every
+    *.service file dropped into /etc/avahi/services/ automatically; no
+    "enabling" step beyond avahi-daemon itself being installed and running.)
+
+  What this buys you: avahi-daemon (already resolving the hostname
+  "musicbox.local" itself, via its default /etc/avahi/avahi-daemon.conf
+  host-name setting — see deployment/README.md) additionally announces an
+  HTTP service record so clients doing a DNS-SD *browse* (not just a
+  hostname lookup) can discover MusicBox without knowing the hostname or
+  port in advance. iOS's Bonjour/NWBrowser APIs can use either mechanism;
+  document which one client code actually uses in client-ios's own docs.
+
+  NOT tested on real hardware. Reviewed against the avahi.service(5) man
+  page and the example service files shipped with avahi
+  (/usr/share/doc/avahi-daemon/examples/ on Debian).
+-->
+<service-group>
+  <name replace-wildcards="yes">MusicBox on %h</name>
+
+  <service>
+    <type>_http._tcp</type>
+    <!-- Must match [server].port in musicbox.toml (default 8080). If you
+         change the port in /etc/musicbox/musicbox.toml, update this too —
+         they are not automatically kept in sync. -->
+    <port>8080</port>
+    <txt-record>path=/api/v1/status</txt-record>
+  </service>
+
+  <!-- Advertised separately from the generic _http._tcp record above so a
+       client can browse specifically for MusicBox servers (e.g. multiple
+       MusicBox units on the same LAN) rather than every HTTP service on the
+       network. iOS: NWBrowser(for: .bonjour(type: "_musicbox._tcp", domain: nil)). -->
+  <service>
+    <type>_musicbox._tcp</type>
+    <port>8080</port>
+    <txt-record>version=1</txt-record>
+  </service>
+</service-group>

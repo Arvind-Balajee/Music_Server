@@ -1,0 +1,78 @@
+# NetworkManager connection profile — static AP config equivalent to
+# dhcpcd.conf.append, for Raspberry Pi OS "Bookworm" and later, where
+# NetworkManager (not dhcpcd) manages wlan0 by default.
+#
+# Installed to: /etc/NetworkManager/system-connections/musicbox-ap.nmconnection
+#   Must be owned root:root, mode 600 — NetworkManager refuses to load a
+#   connection file with looser permissions (install.sh sets this).
+#
+# This profile has NetworkManager itself put wlan0 into AP mode and give it a
+# static 192.168.50.1/24 address — it is the Bookworm-native equivalent of
+# "hostapd.conf + dhcpcd.conf.append" combined, and is the path install.sh
+# uses by default when it detects NetworkManager is active. DHCP for
+# connecting clients is still served by our own dnsmasq (see dnsmasq.conf) —
+# ipv4.method is "manual", not "shared", specifically so NetworkManager does
+# NOT also spin up its own internal dnsmasq/NAT instance and fight with ours.
+#
+# Equivalent nmcli recipe (does the same thing without hand-editing a
+# keyfile), documented in deployment/README.md:
+#   nmcli connection add type wifi ifname wlan0 con-name musicbox-ap \
+#       autoconnect yes save yes ssid MusicBox
+#   nmcli connection modify musicbox-ap 802-11-wireless.mode ap
+#   nmcli connection modify musicbox-ap 802-11-wireless.band bg
+#   nmcli connection modify musicbox-ap 802-11-wireless.channel 7
+#   nmcli connection modify musicbox-ap wifi-sec.key-mgmt wpa-psk
+#   nmcli connection modify musicbox-ap wifi-sec.psk "ChangeMe-MusicBox-2024"
+#   nmcli connection modify musicbox-ap ipv4.method manual
+#   nmcli connection modify musicbox-ap ipv4.addresses 192.168.50.1/24
+#   nmcli connection modify musicbox-ap ipv6.method disabled
+#   nmcli connection up musicbox-ap
+#
+# Alternative if you'd rather keep using hostapd.conf/dnsmasq.conf unchanged
+# on Bookworm: skip this file, mark wlan0 "unmanaged" in NetworkManager
+# instead (drop a file at /etc/NetworkManager/conf.d/musicbox-unmanaged.conf
+# containing `[keyfile]\nunmanaged-devices=interface-name:wlan0`), and use
+# the musicbox-ap-address.service oneshot unit in this directory to assign
+# the static IP that dhcpcd would otherwise have done. install.sh supports
+# both; see deployment/README.md.
+#
+# NOT tested on real hardware / real NetworkManager. Reviewed against the
+# `nm-settings(5)` and `nm-settings-keyfile(5)` man page documentation.
+
+[connection]
+id=musicbox-ap
+uuid=8f2b7b3a-1c4e-4a7d-9d3e-6c2b6a2f4e11
+type=wifi
+# "wifi" is the modern human-readable alias for the historical D-Bus type
+# name "802-11-wireless" (NetworkManager >= 1.36, which Raspberry Pi OS
+# Bookworm ships). If `nmcli connection reload` rejects this file on an
+# older NetworkManager, change this line to `type=802-11-wireless` and the
+# section header below from [wifi]/[wifi-security] to
+# [802-11-wireless]/[802-11-wireless-security].
+interface-name=wlan0
+autoconnect=true
+# Come up as soon as the device appears; don't wait on anything else.
+autoconnect-priority=100
+
+[wifi]
+mode=ap
+ssid=MusicBox
+# 2.4 GHz / channel 7 — see hostapd.conf's comment on why (Pi Zero 2 W is
+# 2.4 GHz-only). band=a + a 5 GHz channel works on Pi 4/5 only.
+band=bg
+channel=7
+
+[wifi-security]
+key-mgmt=wpa-psk
+# CHANGE THIS BEFORE DEPLOYING — same requirement as hostapd.conf's
+# wpa_passphrase. 8-63 ASCII characters.
+psk=ChangeMe-MusicBox-2024
+
+[ipv4]
+method=manual
+address1=192.168.50.1/24
+# No gateway/DNS *of* this connection — 192.168.50.1 IS the gateway/DNS that
+# dnsmasq hands to clients; this profile doesn't need one for itself.
+
+[ipv6]
+method=disabled

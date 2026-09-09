@@ -1,0 +1,40 @@
+# Default MusicBox server configuration for a deployed Raspberry Pi install.
+#
+# Installed to: /etc/musicbox/musicbox.toml (by deployment/install.sh, which
+# only writes this file if it doesn't already exist — see install.sh's
+# check-before-overwrite policy in deployment/README.md — so re-running
+# install.sh never clobbers config you've since edited).
+#
+# Schema/precedence per Plan.md §19 and docs/development.md: TOML, with
+# built-in defaults < this file < CLI flag overrides (--port, --config,
+# --library, --log-level). See server/include/musicbox/config/Config.hpp for
+# the authoritative struct this is parsed into.
+#
+# This differs from the repo's dev-mode config/musicbox.toml only in using
+# filesystem paths that make sense for an installed system (/var/lib,
+# /media) instead of paths relative to a source checkout.
+
+[server]
+address = "0.0.0.0"
+port = 8080
+
+[library]
+# Where your music actually lives. install.sh creates this directory
+# (owned by the musicbox user) and mounts an external SSD here if you're
+# using one — see deployment/README.md "External SSD mount". Override at
+# install time with `install.sh --library-path /some/other/path`; if you
+# change it after installing, also update the musicbox.service unit's
+# ReadOnlyPaths= (systemd's ProtectSystem=strict will otherwise block
+# access to a path outside what the unit explicitly allows).
+paths = [
+    "/media/musicbox/music",
+]
+
+[database]
+path = "/var/lib/musicbox/musicbox.db"
+
+[network]
+mdns_name = "musicbox"
+
+[logging]
+level = "info"

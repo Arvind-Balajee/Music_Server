@@ -1,0 +1,22 @@
+# Static IP snippet for the MusicBox AP interface — Raspberry Pi OS
+# "Bullseye" and earlier (dhcpcd is the network manager).
+#
+# This is NOT a full dhcpcd.conf — it's a fragment to APPEND to the existing
+# /etc/dhcpcd.conf (install.sh does this with a marker-guarded append; see
+# deployment/install.sh). Do not overwrite the whole file: dhcpcd.conf
+# usually has other distro-managed content (e.g. `denyinterfaces`, IPv6
+# settings) you don't want to lose.
+#
+# On Bookworm+ (NetworkManager default, no dhcpcd package), use
+# deployment/networking/nm-musicbox-ap.nmconnection or the nmcli recipe in
+# deployment/README.md instead — this file has no effect there.
+
+# Give wlan0 a fixed address instead of letting dhcpcd request one over DHCP
+# (there's nothing to request it from — wlan0 IS the AP, not a client).
+interface wlan0
+static ip_address=192.168.50.1/24
+# No default route or DNS *from* wlan0 — this interface serves 192.168.50.0/24
+# clients, it doesn't consume upstream connectivity itself. (If your Pi also
+# has eth0/wlan1 for internet access — e.g. for musicbox-sync at home — leave
+# those interfaces alone; this stanza only touches wlan0.)
+nohook wpa_supplicant
