@@ -1,9 +1,11 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 #include "musicbox/http/HttpRequest.hpp"
 #include "musicbox/http/HttpResponse.hpp"
@@ -32,5 +34,31 @@ public:
     // -> 405. Otherwise the matched handler's result is returned as-is.
     [[nodiscard]] virtual HttpResponse dispatch(const HttpRequest& request) const = 0;
 };
+
+// Concrete Router implementation. Route patterns are split into '/'-separated
+// segments; a segment written as "{name}" matches any single path segment and
+// captures it into RouteParams under "name". No route matches the requested
+// path at all -> HttpResponse::error(NotFound, ...); the path matches one or
+// more registered routes but none for this method -> error(MethodNotAllowed).
+// Registering the same (method, pattern) pair twice throws std::logic_error
+// (a programming error, per the base class contract).
+class PathRouter final : public Router {
+public:
+    void addRoute(std::string method, std::string pattern, RequestHandler handler) override;
+    [[nodiscard]] HttpResponse dispatch(const HttpRequest& request) const override;
+
+private:
+    struct Route {
+        std::string method;
+        std::vector<std::string> segments; // pattern split on '/'; "{name}" entries are params
+        RequestHandler handler;
+    };
+
+    std::vector<Route> routes_;
+};
+
+// Factory for the default Router implementation, matching the
+// open*/create* construction style used elsewhere in server/include.
+[[nodiscard]] std::unique_ptr<Router> createRouter();
 
 } // namespace musicbox::http
