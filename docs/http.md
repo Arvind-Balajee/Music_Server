@@ -58,6 +58,70 @@ Limits (protect against resource exhaustion): max request line length, max heade
 bytes, max header count, max body size for non-streaming endpoints — all
 configurable, all enforced before allocating unbounded buffers.
 
+## HttpRequestParser (`server/include/musicbox/http/HttpRequestParser.hpp`)
+
+Concrete incremental parser implementing the state machine described above.
+Added by Agent 2 alongside the implementation; this section documents its
+contract.
+
+```cpp
+enum class ParseStatus { NeedMoreData, Complete, Error };
+
+struct ParseResult {
+    ParseStatus status = ParseStatus::NeedMoreData;
+    HttpRequest request;                            // valid iff status == Complete
+    HttpStatus errorStatus = HttpStatus::BadRequest; // valid iff status == Error
+};
+
+class HttpRequestParser {
+public:
+    struct Limits {
+        std::size_t maxRequestLineLength = 8 * 1024;
+        std::size_t maxHeaderBytes = 16 * 1024;
+        std::size_t maxHeaderCount = 100;
+        std::uint64_t maxBodySize = 10ULL * 1024 * 1024;
+    };
+
+    HttpRequestParser();
+    explicit HttpRequestParser(Limits limits);
+
+    void feed(std::span<const std::byte> data);
+    [[nodiscard]] ParseResult next();
+};
+```
+
+Contract:
+
+* `feed()` appends bytes to an internal buffer; it never parses. This lets a
+  caller hand it exactly what `recv()` returned, whatever that chunk boundary
+  happens to be — a request line, a header line, or a lone `\r\n` may be split
+  across any number of `feed()` calls at any byte offset.
+* `next()` drains as much of the buffered bytes as already available,
+  advancing through `RequestLine -> Headers -> Body` internally, and returns:
+  * `NeedMoreData` — call `feed()` again before calling `next()` again.
+  * `Complete` — one full `HttpRequest` was parsed and removed from the
+    buffer; any remaining bytes (e.g. a pipelined next request delivered in
+    the same `feed()` call) stay buffered. Call `next()` again immediately to
+    check for another complete request before waiting on more socket data.
+  * `Error` — malformed input or a configured limit was exceeded; respond
+    with `errorStatus` and close the connection. The parser instance must be
+    discarded — it does not attempt to resynchronize.
+* Limits are enforced as soon as they *can* be checked, not after buffering
+  the offending data: an over-length request line or header section is
+  rejected while it is still being accumulated (checked against the running
+  buffer size each time a terminating `\r\n` isn't yet found), and an
+  over-limit `Content-Length` is rejected immediately after the header
+  section completes, before any body bytes are buffered.
+* `Transfer-Encoding` (chunked bodies) is not supported in the MVP and is
+  rejected with `400 Bad Request` rather than mishandled — request bodies use
+  `Content-Length` only.
+* The request-target's path component is percent-decoded into
+  `HttpRequest::path`; the query string (if any) is kept raw and undecoded in
+  `HttpRequest::query`, matching the `HttpRequest` contract above.
+* Not thread-safe — one parser instance is driven by exactly one thread
+  (the owning connection's event-loop thread), consistent with
+  `docs/architecture.md` §4.
+
 ## Router
 
 ```cpp
