@@ -1,4 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
+#include <limits>
+#include <unordered_set>
 
 #include "musicbox/model/Ids.hpp"
 
@@ -31,4 +33,39 @@ TEST_CASE("Id equality and ordering", "[model][ids]") {
     CHECK(TrackId{1} == TrackId{1});
     CHECK(TrackId{1} != TrackId{2});
     CHECK(TrackId{1} < TrackId{2});
+}
+
+// Boundary-value coverage for validity: 0 is the sentinel "no row" value
+// (Ids.hpp: "SQLite AUTOINCREMENT primary keys start at 1"), so the boundary
+// between invalid and valid is exactly 0 -> 1, and negative values (which
+// should never occur in practice, but the type doesn't forbid them) must
+// still report as invalid rather than, say, being treated as "some value so
+// it must be fine".
+TEST_CASE("Id validity boundary values", "[model][ids]") {
+    CHECK_FALSE(TrackId{0}.valid());
+    CHECK(TrackId{1}.valid());
+    CHECK_FALSE(TrackId{-1}.valid());
+    CHECK_FALSE(TrackId{std::numeric_limits<TrackId::ValueType>::min()}.valid());
+    CHECK(TrackId{std::numeric_limits<TrackId::ValueType>::max()}.valid());
+}
+
+TEST_CASE("Id ordering across negative, zero, and large values", "[model][ids]") {
+    CHECK(TrackId{-1} < TrackId{0});
+    CHECK(TrackId{0} < TrackId{1});
+    CHECK(TrackId{std::numeric_limits<TrackId::ValueType>::min()} <
+          TrackId{std::numeric_limits<TrackId::ValueType>::max()});
+    CHECK(TrackId{std::numeric_limits<TrackId::ValueType>::max()} ==
+          TrackId{std::numeric_limits<TrackId::ValueType>::max()});
+}
+
+TEST_CASE("Id is usable as a key in unordered associative containers", "[model][ids]") {
+    // Exercises std::hash<Id<Tag>> (Ids.hpp) end-to-end, not just its raw
+    // return value: equal ids must hash and compare equal as map/set keys.
+    std::unordered_set<TrackId> ids;
+    ids.insert(TrackId{1});
+    ids.insert(TrackId{2});
+    ids.insert(TrackId{1}); // duplicate, should not grow the set
+    CHECK(ids.size() == 2);
+    CHECK(ids.count(TrackId{1}) == 1);
+    CHECK(ids.count(TrackId{3}) == 0);
 }

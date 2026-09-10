@@ -15,9 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install SQLite3 (Linux)
+      - name: Install SQLite3 + TagLib (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libtag1-dev
+
+      - name: Install TagLib (macOS)
+        if: runner.os == 'macOS'
+        run: brew install taglib
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -27,6 +31,23 @@ jobs:
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  sanitize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SQLite3 + TagLib
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libtag1-dev
+
+      - name: Configure (ASan + UBSan)
+        run: cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DMUSICBOX_SANITIZE=address,undefined
+
+      - name: Build
+        run: cmake --build build-asan -j
+
+      - name: Test
+        run: ctest --test-dir build-asan --output-on-failure
 
   format-check:
     runs-on: ubuntu-latest
