@@ -14,4 +14,8 @@ if(MUSICBOX_SYNC_SOURCES)
         add_executable(musicbox-sync src/main.cpp)
         target_link_libraries(musicbox-sync PRIVATE musicbox_sync_lib musicbox_warnings)
     endif()
+
+    if(MUSICBOX_BUILD_TESTS)
+        add_subdirectory(tests)
+    endif()
 endif()
