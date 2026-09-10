@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -24,5 +25,10 @@ public:
     [[nodiscard]] virtual std::vector<musicbox::Artist> list(const ArtistQuery& query) = 0;
     [[nodiscard]] virtual std::size_t count(const ArtistQuery& query) = 0;
 };
+
+// See TrackRepository.hpp's makeSqliteTrackRepository for the databasePath
+// contract. Read-only (docs/adr/0006-track-repository-write-methods.md):
+// artist rows are created only via TrackRepository::upsert.
+[[nodiscard]] std::unique_ptr<ArtistRepository> makeSqliteArtistRepository(const std::string& databasePath);
 
 } // namespace musicbox::db

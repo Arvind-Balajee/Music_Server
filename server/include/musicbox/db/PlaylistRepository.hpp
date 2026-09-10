@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -30,5 +31,9 @@ public:
     virtual bool addTrack(musicbox::PlaylistId id, musicbox::TrackId trackId) = 0;
     virtual bool removeTrack(musicbox::PlaylistId id, musicbox::TrackId trackId) = 0;
 };
+
+// See TrackRepository.hpp's makeSqliteTrackRepository for the databasePath
+// contract.
+[[nodiscard]] std::unique_ptr<PlaylistRepository> makeSqlitePlaylistRepository(const std::string& databasePath);
 
 } // namespace musicbox::db

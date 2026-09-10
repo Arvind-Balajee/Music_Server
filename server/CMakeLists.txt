@@ -1,5 +1,12 @@
 find_package(Threads REQUIRED)
 find_package(SQLite3)
+find_package(taglib CONFIG QUIET)
+if(NOT taglib_FOUND)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(TAGLIB QUIET IMPORTED_TARGET taglib)
+    endif()
+endif()
 
 # GLOB is used intentionally (see shared/CMakeLists.txt) so Agents 1-4 can add
 # source files under their own subdirectory (net/, http/, db/, library/,
@@ -41,6 +48,17 @@ if(SQLite3_FOUND)
     endif()
 else()
     message(WARNING "System SQLite3 not found; Agent 3 must wire up a FetchContent fallback in server/CMakeLists.txt before the db/ sources will link.")
+endif()
+
+if(taglib_FOUND AND TARGET TagLib::TagLib)
+    target_link_libraries(musicbox_server_lib ${MUSICBOX_SERVER_LIB_SCOPE} TagLib::TagLib)
+elseif(TARGET PkgConfig::TAGLIB)
+    target_link_libraries(musicbox_server_lib ${MUSICBOX_SERVER_LIB_SCOPE} PkgConfig::TAGLIB)
+else()
+    message(WARNING "TagLib not found (tried CMake config and pkg-config); "
+        "server/src/library/MetadataExtractor.cpp will fail to link. "
+        "Install it (e.g. `brew install taglib` / `apt install libtag1-dev`) "
+        "or add a FetchContent fallback here.")
 endif()
 
 if(TARGET musicbox_sanitizers)
