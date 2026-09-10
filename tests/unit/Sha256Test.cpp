@@ -36,3 +36,57 @@ TEST_CASE("sha256File throws for a missing file", "[util][sha256]") {
     CHECK_THROWS_AS(sha256File("/nonexistent/path/that/should/not/exist.bin"),
                      std::runtime_error);
 }
+
+TEST_CASE("sha256File matches sha256Bytes for an empty file", "[util][sha256]") {
+    const std::string path = "musicbox_sha256_test_empty.tmp";
+    {
+        std::ofstream out(path, std::ios::binary);
+    }
+    CHECK(sha256File(path) == sha256Bytes("", 0));
+    std::remove(path.c_str());
+}
+
+// sha256File (shared/src/util/Sha256.cpp) reads in fixed 64 KiB (1 << 16)
+// chunks specifically so memory use stays bounded regardless of file size.
+// That makes the chunk boundary itself the highest-risk spot for an
+// off-by-one: a file of exactly one chunk, one byte under, and one byte over
+// must all still hash identically to the equivalent in-memory sha256Bytes()
+// call, and the read loop must terminate cleanly (no infinite loop, no
+// trailing garbage byte) right at EOF == a chunk boundary.
+TEST_CASE("sha256File matches sha256Bytes across the 64 KiB chunk boundary", "[util][sha256]") {
+    constexpr std::size_t chunkSize = 1 << 16;
+
+    const auto writeAndHash = [](const std::string& path, std::size_t size) {
+        std::string content(size, '\0');
+        for (std::size_t i = 0; i < size; ++i) {
+            content[i] = static_cast<char>(i % 251); // non-repeating-enough filler
+        }
+        {
+            std::ofstream out(path, std::ios::binary);
+            out.write(content.data(), static_cast<std::streamsize>(content.size()));
+        }
+        const std::string expected = sha256Bytes(content.data(), content.size());
+        const std::string actual = sha256File(path);
+        std::remove(path.c_str());
+        return std::pair{expected, actual};
+    };
+
+    {
+        auto [expected, actual] = writeAndHash("musicbox_sha256_test_chunk_minus1.tmp", chunkSize - 1);
+        CHECK(expected == actual);
+    }
+    {
+        auto [expected, actual] = writeAndHash("musicbox_sha256_test_chunk_exact.tmp", chunkSize);
+        CHECK(expected == actual);
+    }
+    {
+        auto [expected, actual] = writeAndHash("musicbox_sha256_test_chunk_plus1.tmp", chunkSize + 1);
+        CHECK(expected == actual);
+    }
+    {
+        // Two full chunks exactly - the read loop must correctly stop after
+        // the second chunk instead of attempting a third empty read.
+        auto [expected, actual] = writeAndHash("musicbox_sha256_test_two_chunks.tmp", chunkSize * 2);
+        CHECK(expected == actual);
+    }
+}
