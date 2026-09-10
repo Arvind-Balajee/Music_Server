@@ -37,7 +37,7 @@ public:
     [[nodiscard]] bool hasPendingWrites() const noexcept { return !outbound_.empty(); }
     [[nodiscard]] bool hasError() const noexcept { return error_; }
 
-    // Additive (see docs/adr/0006-close-after-flush.md): tells the EventLoop to
+    // Additive (see docs/adr/0007-tcpconnection-close-after-flush.md): tells the EventLoop to
     // close this connection once the outbound buffer is fully drained, instead
     // of requiring a second round trip through the readable/writable callbacks.
     // Used for HTTP/1.0-style or "Connection: close" responses.
