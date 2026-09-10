@@ -10,9 +10,11 @@ not fill it in until you have actually run the benchmark.
 
 ## How to benchmark this project
 
-1. Build and run the server (once Milestones 1-7 land — see `Plan.md` and
-   `docs/testing.md` for current status; as of this writing there is no HTTP
-   server on `main` yet, only the CLI stub):
+1. Build and run the server (Milestones 1-4's networking/HTTP/streaming/DB
+   layers are on `main`, but not yet wired together behind real
+   `/api/v1/*` routes -- `run` currently starts the real epoll/kqueue
+   `EventLoop` behind a temporary fixed-response handler, not the actual
+   API; see `docs/testing.md` for exact status per component):
 
    ```bash
    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -74,10 +76,10 @@ not fill it in until you have actually run the benchmark.
 
 ## Results
 
-_No benchmarks have been run against a real `musicbox-server` yet — there are
-no HTTP endpoints on `main` to benchmark (see `docs/testing.md`). The rows
-below are the target metrics from `Plan.md` §16, to be filled in once
-Milestones 1-7 land._
+_No benchmarks have been run yet — there are no real `/api/v1/*` routes on
+`main` to benchmark against yet, only the temporary Milestone-1 demo handler
+(see `docs/testing.md`). The rows below are the target metrics from `Plan.md`
+§16, to be filled in once Agent 4's API layer lands._
 
 **Environment:** TBD (record: CPU, RAM, OS/kernel version, storage — SSD/HDD/
 model —, network — wired/Wi-Fi generation/link speed —, and whether this is
@@ -96,7 +98,7 @@ the target Raspberry Pi hardware or a development machine)
 | Playback start | < 500 ms | TBD | client-side measurement (iOS) or TTFB proxy | TBD |
 | CPU usage (idle) | — (record actual) | TBD | `ps -o %cpu -p <pid>` | TBD |
 | CPU usage (10 streams) | — (record actual) | TBD | `ps -o %cpu -p <pid>` during `benchmark.sh` concurrent-streams run | TBD |
-| Database query latency | — (record actual) | TBD | needs Agent 3's repositories | TBD |
+| Database query latency | — (record actual) | TBD | Agent 3's repositories exist and are correctness-tested; not yet latency-benchmarked | TBD |
 | Library indexing time | — (record actual) | TBD | `time musicbox-server scan --config ...` | TBD |
 
 ## Status
@@ -104,6 +106,6 @@ the target Raspberry Pi hardware or a development machine)
 No benchmarks recorded yet — tooling (`scripts/benchmark.sh`,
 `scripts/generate_test_audio.py`, `scripts/fragment_client.py`) is built and
 was smoke-tested against throwaway HTTP/TCP stubs during development (see
-Agent 8's report), but there is no real `musicbox-server` HTTP endpoint on
+Agent 8's report), but there is no real `/api/v1/*` route on
 `main` yet to produce actual numbers against. Re-run this doc's "How to
 benchmark" steps and fill in the Results table once Milestones 1-7 land.
