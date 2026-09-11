@@ -41,7 +41,8 @@ TEST_CASE("LibraryRootRepository markScanned sets lastScanAt", "[db][libraryroot
     REQUIRE(all.size() == 1);
     REQUIRE(all.front().lastScanAt.has_value());
     // Stored as epoch millis -- compare at millisecond granularity.
-    CHECK(std::chrono::duration_cast<std::chrono::milliseconds>(*all.front().lastScanAt - scanTime).count() == 0);
+    CHECK(std::chrono::duration_cast<std::chrono::milliseconds>(*all.front().lastScanAt - scanTime)
+              .count() == 0);
 }
 
 TEST_CASE("LibraryRootRepository supports multiple distinct roots", "[db][libraryroot]") {

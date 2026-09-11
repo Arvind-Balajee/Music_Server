@@ -60,7 +60,8 @@ RangeParseResult parseRange(std::string_view headerValue, std::uint64_t resource
             return notSatisfiable();
         }
         if (suffixLength > resourceSize) {
-            suffixLength = resourceSize; // clamp: "last N bytes" of a smaller file is the whole file
+            suffixLength =
+                resourceSize; // clamp: "last N bytes" of a smaller file is the whole file
         }
         range.start = resourceSize - suffixLength;
         range.end = resourceSize - 1;

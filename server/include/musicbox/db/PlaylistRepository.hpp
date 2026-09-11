@@ -17,7 +17,8 @@ public:
     virtual ~PlaylistRepository() = default;
 
     [[nodiscard]] virtual std::optional<musicbox::Playlist> findById(musicbox::PlaylistId id) = 0;
-    [[nodiscard]] virtual std::vector<musicbox::Playlist> list(std::size_t limit, std::size_t offset) = 0;
+    [[nodiscard]] virtual std::vector<musicbox::Playlist> list(std::size_t limit,
+                                                               std::size_t offset) = 0;
 
     [[nodiscard]] virtual musicbox::Playlist create(std::string name) = 0;
     [[nodiscard]] virtual bool rename(musicbox::PlaylistId id, std::string newName) = 0;
@@ -34,6 +35,7 @@ public:
 
 // See TrackRepository.hpp's makeSqliteTrackRepository for the databasePath
 // contract.
-[[nodiscard]] std::unique_ptr<PlaylistRepository> makeSqlitePlaylistRepository(const std::string& databasePath);
+[[nodiscard]] std::unique_ptr<PlaylistRepository>
+makeSqlitePlaylistRepository(const std::string& databasePath);
 
 } // namespace musicbox::db

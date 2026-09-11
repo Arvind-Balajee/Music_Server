@@ -13,7 +13,8 @@ namespace musicbox::test {
 // isolated database.
 inline std::string uniqueMemoryDbUri() {
     static std::atomic<int> counter{0};
-    return "file:musicbox_test_" + std::to_string(counter.fetch_add(1)) + "?mode=memory&cache=shared";
+    return "file:musicbox_test_" + std::to_string(counter.fetch_add(1)) +
+           "?mode=memory&cache=shared";
 }
 
 } // namespace musicbox::test

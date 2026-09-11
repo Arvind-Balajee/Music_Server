@@ -28,8 +28,8 @@ TEST_CASE("HttpResponse::text sets a text Content-Type", "[http][response]") {
 }
 
 TEST_CASE("HttpResponse::error matches the docs/api.md error shape", "[http][response]") {
-    auto response =
-        HttpResponse::error(HttpStatus::NotFound, "TRACK_NOT_FOUND", "The requested track does not exist.");
+    auto response = HttpResponse::error(HttpStatus::NotFound, "TRACK_NOT_FOUND",
+                                        "The requested track does not exist.");
     CHECK(response.statusCode == HttpStatus::NotFound);
 
     auto parsed = nlohmann::json::parse(bodyAsString(response));

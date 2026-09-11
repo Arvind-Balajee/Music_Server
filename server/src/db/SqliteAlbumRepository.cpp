@@ -23,10 +23,15 @@ musicbox::Album mapRow(SqliteStatement& stmt) {
 
 } // namespace
 
-SqliteAlbumRepository::SqliteAlbumRepository(const std::string& databasePath) : connection_(databasePath) { migrate(connection_); }
+SqliteAlbumRepository::SqliteAlbumRepository(const std::string& databasePath)
+    : connection_(databasePath) {
+    migrate(connection_);
+}
 
 std::optional<musicbox::Album> SqliteAlbumRepository::findById(musicbox::AlbumId id) {
-    SqliteStatement stmt(connection_, "SELECT id, title, album_artist_id, year, has_artwork FROM albums WHERE id = ?;");
+    SqliteStatement stmt(
+        connection_,
+        "SELECT id, title, album_artist_id, year, has_artwork FROM albums WHERE id = ?;");
     stmt.bindInt64(1, id.value());
     if (!stmt.step()) {
         return std::nullopt;
@@ -36,11 +41,13 @@ std::optional<musicbox::Album> SqliteAlbumRepository::findById(musicbox::AlbumId
 
 std::vector<musicbox::Album> SqliteAlbumRepository::list(const AlbumQuery& query) {
     SqliteStatement stmt(connection_,
-                          "SELECT id, title, album_artist_id, year, has_artwork FROM albums "
-                          "WHERE (?1 IS NULL OR album_artist_id = ?1) "
-                          "AND (?2 IS NULL OR title LIKE ?2 COLLATE NOCASE) "
-                          "ORDER BY title COLLATE NOCASE LIMIT ?3 OFFSET ?4;");
-    stmt.bindOptionalInt64(1, query.artistId.has_value() ? std::optional<std::int64_t>(query.artistId->value()) : std::nullopt);
+                         "SELECT id, title, album_artist_id, year, has_artwork FROM albums "
+                         "WHERE (?1 IS NULL OR album_artist_id = ?1) "
+                         "AND (?2 IS NULL OR title LIKE ?2 COLLATE NOCASE) "
+                         "ORDER BY title COLLATE NOCASE LIMIT ?3 OFFSET ?4;");
+    stmt.bindOptionalInt64(1, query.artistId.has_value()
+                                  ? std::optional<std::int64_t>(query.artistId->value())
+                                  : std::nullopt);
     if (query.search.has_value()) {
         stmt.bindText(2, "%" + *query.search + "%");
     } else {
@@ -57,11 +64,12 @@ std::vector<musicbox::Album> SqliteAlbumRepository::list(const AlbumQuery& query
 }
 
 std::size_t SqliteAlbumRepository::count(const AlbumQuery& query) {
-    SqliteStatement stmt(connection_,
-                          "SELECT COUNT(*) FROM albums "
-                          "WHERE (?1 IS NULL OR album_artist_id = ?1) "
-                          "AND (?2 IS NULL OR title LIKE ?2 COLLATE NOCASE);");
-    stmt.bindOptionalInt64(1, query.artistId.has_value() ? std::optional<std::int64_t>(query.artistId->value()) : std::nullopt);
+    SqliteStatement stmt(connection_, "SELECT COUNT(*) FROM albums "
+                                      "WHERE (?1 IS NULL OR album_artist_id = ?1) "
+                                      "AND (?2 IS NULL OR title LIKE ?2 COLLATE NOCASE);");
+    stmt.bindOptionalInt64(1, query.artistId.has_value()
+                                  ? std::optional<std::int64_t>(query.artistId->value())
+                                  : std::nullopt);
     if (query.search.has_value()) {
         stmt.bindText(2, "%" + *query.search + "%");
     } else {

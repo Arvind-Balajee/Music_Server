@@ -16,7 +16,7 @@ namespace {
 std::string toLowerExtension(const std::string& path) {
     auto ext = std::filesystem::path(path).extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(),
-                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return ext;
 }
 
@@ -26,11 +26,16 @@ std::string toLowerExtension(const std::string& path) {
 // than the MVP scanner needs — extension is an acceptable approximation for
 // display/filtering purposes (docs/database.md's `tracks.codec` column).
 std::string codecForExtension(const std::string& lowerExt) {
-    if (lowerExt == ".mp3") return "mp3";
-    if (lowerExt == ".flac") return "flac";
-    if (lowerExt == ".m4a") return "m4a";
-    if (lowerExt == ".aac") return "aac";
-    if (lowerExt == ".wav") return "wav";
+    if (lowerExt == ".mp3")
+        return "mp3";
+    if (lowerExt == ".flac")
+        return "flac";
+    if (lowerExt == ".m4a")
+        return "m4a";
+    if (lowerExt == ".aac")
+        return "aac";
+    if (lowerExt == ".wav")
+        return "wav";
     return lowerExt.empty() ? "unknown" : lowerExt.substr(1);
 }
 

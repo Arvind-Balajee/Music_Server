@@ -39,7 +39,7 @@ void PathRouter::addRoute(std::string method, std::string pattern, RequestHandle
     for (const auto& existing : routes_) {
         if (existing.method == route.method && existing.segments == route.segments) {
             throw std::logic_error("Router::addRoute: duplicate route registered for " +
-                                    route.method + " " + pattern);
+                                   route.method + " " + pattern);
         }
     }
 
@@ -61,7 +61,7 @@ HttpResponse PathRouter::dispatch(const HttpRequest& request) const {
             const std::string& patternSegment = route.segments[i];
             if (isParamSegment(patternSegment)) {
                 params.emplace(patternSegment.substr(1, patternSegment.size() - 2),
-                                requestSegments[i]);
+                               requestSegments[i]);
             } else if (patternSegment != requestSegments[i]) {
                 matched = false;
                 break;
@@ -79,13 +79,15 @@ HttpResponse PathRouter::dispatch(const HttpRequest& request) const {
 
     if (pathMatchedSomeMethod) {
         return HttpResponse::error(HttpStatus::MethodNotAllowed, "METHOD_NOT_ALLOWED",
-                                    "The " + request.method + " method is not supported for " +
-                                        request.path + ".");
+                                   "The " + request.method + " method is not supported for " +
+                                       request.path + ".");
     }
     return HttpResponse::error(HttpStatus::NotFound, "NOT_FOUND",
-                                "No route matches " + request.path + ".");
+                               "No route matches " + request.path + ".");
 }
 
-std::unique_ptr<Router> createRouter() { return std::make_unique<PathRouter>(); }
+std::unique_ptr<Router> createRouter() {
+    return std::make_unique<PathRouter>();
+}
 
 } // namespace musicbox::http

@@ -14,8 +14,10 @@ namespace {
 
 } // namespace
 
-SqliteStatement::SqliteStatement(const SqliteConnection& connection, const std::string& sql) : db_(connection.handle()) {
-    const int rc = sqlite3_prepare_v2(db_, sql.c_str(), static_cast<int>(sql.size()) + 1, &stmt_, nullptr);
+SqliteStatement::SqliteStatement(const SqliteConnection& connection, const std::string& sql)
+    : db_(connection.handle()) {
+    const int rc =
+        sqlite3_prepare_v2(db_, sql.c_str(), static_cast<int>(sql.size()) + 1, &stmt_, nullptr);
     if (rc != SQLITE_OK) {
         throwSqliteError(db_, "sqlite3_prepare_v2 failed for '" + sql + "'");
     }
@@ -42,7 +44,8 @@ void SqliteStatement::bindOptionalInt64(int index, std::optional<std::int64_t> v
 }
 
 void SqliteStatement::bindText(int index, const std::string& value) {
-    if (sqlite3_bind_text(stmt_, index, value.data(), static_cast<int>(value.size()), SQLITE_TRANSIENT) != SQLITE_OK) {
+    if (sqlite3_bind_text(stmt_, index, value.data(), static_cast<int>(value.size()),
+                          SQLITE_TRANSIENT) != SQLITE_OK) {
         throwSqliteError(db_, "sqlite3_bind_text failed");
     }
 }
@@ -115,6 +118,8 @@ std::optional<std::string> SqliteStatement::columnOptionalText(int index) const 
     return columnText(index);
 }
 
-bool SqliteStatement::isColumnNull(int index) const { return sqlite3_column_type(stmt_, index) == SQLITE_NULL; }
+bool SqliteStatement::isColumnNull(int index) const {
+    return sqlite3_column_type(stmt_, index) == SQLITE_NULL;
+}
 
 } // namespace musicbox::db

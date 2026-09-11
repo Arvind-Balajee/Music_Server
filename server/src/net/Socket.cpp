@@ -21,9 +21,13 @@ namespace {
 
 Socket::Socket(int fd) noexcept : fd_(fd) {}
 
-Socket::~Socket() { closeIfOwned(); }
+Socket::~Socket() {
+    closeIfOwned();
+}
 
-Socket::Socket(Socket&& other) noexcept : fd_(other.fd_) { other.fd_ = -1; }
+Socket::Socket(Socket&& other) noexcept : fd_(other.fd_) {
+    other.fd_ = -1;
+}
 
 Socket& Socket::operator=(Socket&& other) noexcept {
     if (this != &other) {

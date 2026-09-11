@@ -22,7 +22,9 @@ void ignoreSigPipeOnce() {
 
 } // namespace
 
-EventLoop::EventLoop() : poller_(makePlatformPoller()) { ignoreSigPipeOnce(); }
+EventLoop::EventLoop() : poller_(makePlatformPoller()) {
+    ignoreSigPipeOnce();
+}
 
 EventLoop::~EventLoop() = default;
 
@@ -32,11 +34,17 @@ void EventLoop::listen(const std::string& address, std::uint16_t port) {
     listeners_.push_back(std::move(listener));
 }
 
-void EventLoop::onReadable(ConnectionReadableCallback callback) { onReadable_ = std::move(callback); }
+void EventLoop::onReadable(ConnectionReadableCallback callback) {
+    onReadable_ = std::move(callback);
+}
 
-void EventLoop::onClosed(ConnectionClosedCallback callback) { onClosed_ = std::move(callback); }
+void EventLoop::onClosed(ConnectionClosedCallback callback) {
+    onClosed_ = std::move(callback);
+}
 
-void EventLoop::stop() noexcept { running_.store(false, std::memory_order_relaxed); }
+void EventLoop::stop() noexcept {
+    running_.store(false, std::memory_order_relaxed);
+}
 
 void EventLoop::run() {
     running_.store(true, std::memory_order_relaxed);
@@ -148,7 +156,8 @@ void EventLoop::run() {
                 shouldClose = connection.hasError();
             }
 
-            if (!shouldClose && connection.wantsCloseAfterFlush() && !connection.hasPendingWrites()) {
+            if (!shouldClose && connection.wantsCloseAfterFlush() &&
+                !connection.hasPendingWrites()) {
                 shouldClose = true;
             }
 

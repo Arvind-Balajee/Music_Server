@@ -17,7 +17,10 @@ musicbox::Artist mapRow(SqliteStatement& stmt) {
 
 } // namespace
 
-SqliteArtistRepository::SqliteArtistRepository(const std::string& databasePath) : connection_(databasePath) { migrate(connection_); }
+SqliteArtistRepository::SqliteArtistRepository(const std::string& databasePath)
+    : connection_(databasePath) {
+    migrate(connection_);
+}
 
 std::optional<musicbox::Artist> SqliteArtistRepository::findById(musicbox::ArtistId id) {
     SqliteStatement stmt(connection_, "SELECT id, name, sort_name FROM artists WHERE id = ?;");
@@ -29,10 +32,9 @@ std::optional<musicbox::Artist> SqliteArtistRepository::findById(musicbox::Artis
 }
 
 std::vector<musicbox::Artist> SqliteArtistRepository::list(const ArtistQuery& query) {
-    SqliteStatement stmt(connection_,
-                          "SELECT id, name, sort_name FROM artists "
-                          "WHERE (?1 IS NULL OR name LIKE ?1 COLLATE NOCASE) "
-                          "ORDER BY name COLLATE NOCASE LIMIT ?2 OFFSET ?3;");
+    SqliteStatement stmt(connection_, "SELECT id, name, sort_name FROM artists "
+                                      "WHERE (?1 IS NULL OR name LIKE ?1 COLLATE NOCASE) "
+                                      "ORDER BY name COLLATE NOCASE LIMIT ?2 OFFSET ?3;");
     if (query.search.has_value()) {
         stmt.bindText(1, "%" + *query.search + "%");
     } else {
@@ -49,7 +51,9 @@ std::vector<musicbox::Artist> SqliteArtistRepository::list(const ArtistQuery& qu
 }
 
 std::size_t SqliteArtistRepository::count(const ArtistQuery& query) {
-    SqliteStatement stmt(connection_, "SELECT COUNT(*) FROM artists WHERE (?1 IS NULL OR name LIKE ?1 COLLATE NOCASE);");
+    SqliteStatement stmt(
+        connection_,
+        "SELECT COUNT(*) FROM artists WHERE (?1 IS NULL OR name LIKE ?1 COLLATE NOCASE);");
     if (query.search.has_value()) {
         stmt.bindText(1, "%" + *query.search + "%");
     } else {

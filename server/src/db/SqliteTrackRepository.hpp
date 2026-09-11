@@ -21,9 +21,10 @@ public:
     [[nodiscard]] std::vector<musicbox::Track> list(const TrackQuery& query) override;
     [[nodiscard]] std::size_t count(const TrackQuery& query) override;
     [[nodiscard]] std::optional<std::string> resolveAbsolutePath(musicbox::TrackId id) override;
-    [[nodiscard]] std::optional<musicbox::Track> findByPath(musicbox::LibraryRootId libraryRootId,
-                                                             const std::string& relativePath) override;
-    [[nodiscard]] std::vector<musicbox::Track> listByLibraryRoot(musicbox::LibraryRootId libraryRootId) override;
+    [[nodiscard]] std::optional<musicbox::Track>
+    findByPath(musicbox::LibraryRootId libraryRootId, const std::string& relativePath) override;
+    [[nodiscard]] std::vector<musicbox::Track>
+    listByLibraryRoot(musicbox::LibraryRootId libraryRootId) override;
     musicbox::Track upsert(const TrackUpsert& data) override;
     bool softDelete(musicbox::TrackId id, std::chrono::system_clock::time_point when) override;
 

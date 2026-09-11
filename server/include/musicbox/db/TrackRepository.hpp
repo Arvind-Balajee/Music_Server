@@ -35,7 +35,8 @@ struct TrackUpsert {
     std::string title;
     std::optional<std::string> artistName;
     std::optional<std::string> albumTitle;
-    std::optional<std::string> albumArtist; // resolved the same way as artistName for the album's album_artist_id
+    std::optional<std::string>
+        albumArtist; // resolved the same way as artistName for the album's album_artist_id
     std::optional<int> trackNumber;
     std::optional<int> discNumber;
     std::optional<int> year;
@@ -77,13 +78,14 @@ public:
     // soft-deleted rows (a file that reappears after being deleted must reuse
     // the same row per the tracks.UNIQUE(library_root_id, relative_path)
     // constraint — see docs/database.md).
-    [[nodiscard]] virtual std::optional<musicbox::Track> findByPath(musicbox::LibraryRootId libraryRootId,
-                                                                     const std::string& relativePath) = 0;
+    [[nodiscard]] virtual std::optional<musicbox::Track>
+    findByPath(musicbox::LibraryRootId libraryRootId, const std::string& relativePath) = 0;
 
     // All tracks under a root, including soft-deleted ones. The LibraryScanner
     // uses this to detect files that were indexed but are no longer present on
     // disk.
-    [[nodiscard]] virtual std::vector<musicbox::Track> listByLibraryRoot(musicbox::LibraryRootId libraryRootId) = 0;
+    [[nodiscard]] virtual std::vector<musicbox::Track>
+    listByLibraryRoot(musicbox::LibraryRootId libraryRootId) = 0;
 
     // Inserts a new track row, or updates the existing one for
     // (libraryRootId, relativePath) and clears deleted_at if it was set.
@@ -101,6 +103,7 @@ public:
 // repository instances to see the same in-memory database). Applies pending
 // migrations before returning. One instance per worker thread; never share
 // across threads (see class comment above).
-[[nodiscard]] std::unique_ptr<TrackRepository> makeSqliteTrackRepository(const std::string& databasePath);
+[[nodiscard]] std::unique_ptr<TrackRepository>
+makeSqliteTrackRepository(const std::string& databasePath);
 
 } // namespace musicbox::db

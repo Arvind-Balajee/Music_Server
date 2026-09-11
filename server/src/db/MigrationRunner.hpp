@@ -36,6 +36,7 @@ struct Migration {
 void applyMigrations(SqliteConnection& connection, const std::vector<Migration>& migrations);
 
 // Convenience wrapper: loadMigrations(directory) then applyMigrations(connection, ...).
-void migrate(SqliteConnection& connection, const std::filesystem::path& directory = defaultMigrationsDirectory());
+void migrate(SqliteConnection& connection,
+             const std::filesystem::path& directory = defaultMigrationsDirectory());
 
 } // namespace musicbox::db

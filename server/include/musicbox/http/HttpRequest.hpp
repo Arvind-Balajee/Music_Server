@@ -10,10 +10,10 @@ namespace musicbox::http {
 // A fully-parsed HTTP request. Header keys are stored lower-cased so lookups
 // don't need to be case-insensitive at every call site.
 struct HttpRequest {
-    std::string method;   // "GET", "POST", "HEAD", ...
-    std::string path;     // decoded, percent-decoded, without the query string
-    std::string query;    // raw query string (no leading '?'), "" if none
-    std::string version;  // "HTTP/1.1"
+    std::string method;  // "GET", "POST", "HEAD", ...
+    std::string path;    // decoded, percent-decoded, without the query string
+    std::string query;   // raw query string (no leading '?'), "" if none
+    std::string version; // "HTTP/1.1"
 
     std::unordered_map<std::string, std::string> headers; // lower-cased keys
 

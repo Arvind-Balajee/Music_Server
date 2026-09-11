@@ -14,8 +14,8 @@ using musicbox::sync::FileHasher;
 using musicbox::sync::MockServerManifestSource;
 using musicbox::sync::NullUploadTransport;
 using musicbox::sync::PushSummary;
-using musicbox::sync::Sha256FileHasher;
 using musicbox::sync::ServerManifestEntry;
+using musicbox::sync::Sha256FileHasher;
 using musicbox::sync::SyncEngine;
 using musicbox::sync::test::TempDirFixture;
 
@@ -27,14 +27,16 @@ bool contains(const std::vector<std::string>& v, const std::string& item) {
 
 } // namespace
 
-TEST_CASE("SyncEngine::push wires LocalScanner + ManifestDiffer + UploadTransport end to end", "[sync][engine]") {
+TEST_CASE("SyncEngine::push wires LocalScanner + ManifestDiffer + UploadTransport end to end",
+          "[sync][engine]") {
     TempDirFixture dir;
     const auto keepPath = dir.writeFile("keep.mp3", "same content");
     dir.writeFile("brand_new.flac", "totally new content");
 
     const std::string keepHash = musicbox::util::sha256File(keepPath.string());
-    const std::chrono::system_clock::time_point keepMtime = std::chrono::time_point_cast<
-        std::chrono::system_clock::duration>(std::chrono::file_clock::to_sys(std::filesystem::last_write_time(keepPath)));
+    const std::chrono::system_clock::time_point keepMtime =
+        std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            std::chrono::file_clock::to_sys(std::filesystem::last_write_time(keepPath)));
     const auto keepSize = std::filesystem::file_size(keepPath);
 
     // Server already has "keep.mp3" (identical) and "gone.wav" (missing locally
@@ -81,8 +83,9 @@ TEST_CASE("SyncEngine::computeDiff with forceHash re-verifies file content", "[s
     TempDirFixture dir;
     const auto path = dir.writeFile("track.mp3", "original content");
     const std::string correctHash = musicbox::util::sha256File(path.string());
-    const std::chrono::system_clock::time_point mtime = std::chrono::time_point_cast<
-        std::chrono::system_clock::duration>(std::chrono::file_clock::to_sys(std::filesystem::last_write_time(path)));
+    const std::chrono::system_clock::time_point mtime =
+        std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+            std::chrono::file_clock::to_sys(std::filesystem::last_write_time(path)));
     const auto size = std::filesystem::file_size(path);
 
     // Server manifest claims a different hash for the same size+mtime,

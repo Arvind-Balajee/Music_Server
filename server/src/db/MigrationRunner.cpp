@@ -47,15 +47,17 @@ std::string readFile(const std::filesystem::path& path) {
 }
 
 std::int64_t currentSchemaVersion(SqliteConnection& connection) {
-    SqliteStatement checkTable(connection,
-                                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='schema_migrations';");
+    SqliteStatement checkTable(
+        connection,
+        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='schema_migrations';");
     checkTable.step();
     const bool tableExists = checkTable.columnInt64(0) > 0;
     if (!tableExists) {
         return 0;
     }
 
-    SqliteStatement maxVersion(connection, "SELECT COALESCE(MAX(version), 0) FROM schema_migrations;");
+    SqliteStatement maxVersion(connection,
+                               "SELECT COALESCE(MAX(version), 0) FROM schema_migrations;");
     maxVersion.step();
     return maxVersion.columnInt64(0);
 }
@@ -76,20 +78,25 @@ std::vector<Migration> loadMigrations(const std::filesystem::path& directory) {
         const std::string stem = entry.path().stem().string();
         const auto version = parseVersionPrefix(stem);
         if (!version.has_value()) {
-            throw std::runtime_error("migration filename does not match '<version>_<name>.sql': " + entry.path().string());
+            throw std::runtime_error("migration filename does not match '<version>_<name>.sql': " +
+                                     entry.path().string());
         }
         migrations.push_back(Migration{*version, stem, readFile(entry.path())});
     }
 
-    std::sort(migrations.begin(), migrations.end(), [](const Migration& a, const Migration& b) { return a.version < b.version; });
+    std::sort(migrations.begin(), migrations.end(),
+              [](const Migration& a, const Migration& b) { return a.version < b.version; });
     return migrations;
 }
 
-std::filesystem::path defaultMigrationsDirectory() { return std::filesystem::path(__FILE__).parent_path() / "migrations"; }
+std::filesystem::path defaultMigrationsDirectory() {
+    return std::filesystem::path(__FILE__).parent_path() / "migrations";
+}
 
 void applyMigrations(SqliteConnection& connection, const std::vector<Migration>& migrations) {
     std::vector<Migration> sorted = migrations;
-    std::sort(sorted.begin(), sorted.end(), [](const Migration& a, const Migration& b) { return a.version < b.version; });
+    std::sort(sorted.begin(), sorted.end(),
+              [](const Migration& a, const Migration& b) { return a.version < b.version; });
 
     for (const auto& migration : sorted) {
         SqliteTransaction transaction(connection);
@@ -105,7 +112,8 @@ void applyMigrations(SqliteConnection& connection, const std::vector<Migration>&
 
         connection.exec(migration.sql);
 
-        SqliteStatement record(connection, "INSERT INTO schema_migrations(version, applied_at) VALUES(?, ?);");
+        SqliteStatement record(connection,
+                               "INSERT INTO schema_migrations(version, applied_at) VALUES(?, ?);");
         record.bindInt64(1, migration.version);
         record.bindInt64(2, nowEpochMillis());
         record.run();
@@ -114,6 +122,8 @@ void applyMigrations(SqliteConnection& connection, const std::vector<Migration>&
     }
 }
 
-void migrate(SqliteConnection& connection, const std::filesystem::path& directory) { applyMigrations(connection, loadMigrations(directory)); }
+void migrate(SqliteConnection& connection, const std::filesystem::path& directory) {
+    applyMigrations(connection, loadMigrations(directory));
+}
 
 } // namespace musicbox::db

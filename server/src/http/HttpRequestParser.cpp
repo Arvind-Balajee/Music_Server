@@ -13,8 +13,10 @@ namespace {
 }
 
 [[nodiscard]] int hexValue(char c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
     return c - 'A' + 10;
 }
 
@@ -176,8 +178,8 @@ ParseResult HttpRequestParser::next() {
             const std::string_view rawPath =
                 queryPos == std::string_view::npos ? target : target.substr(0, queryPos);
             const std::string_view rawQuery = queryPos == std::string_view::npos
-                                                   ? std::string_view{}
-                                                   : target.substr(queryPos + 1);
+                                                  ? std::string_view{}
+                                                  : target.substr(queryPos + 1);
 
             auto decodedPath = percentDecode(rawPath);
             if (!decodedPath.has_value()) {

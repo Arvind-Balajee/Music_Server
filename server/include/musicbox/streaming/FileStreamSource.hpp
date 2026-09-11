@@ -32,6 +32,7 @@ public:
 
 // Opens `absolutePath` (already resolved server-side from a TrackId) for
 // streaming. Throws std::runtime_error if the file cannot be opened.
-[[nodiscard]] std::unique_ptr<FileStreamSource> openFileStreamSource(const std::string& absolutePath);
+[[nodiscard]] std::unique_ptr<FileStreamSource>
+openFileStreamSource(const std::string& absolutePath);
 
 } // namespace musicbox::streaming

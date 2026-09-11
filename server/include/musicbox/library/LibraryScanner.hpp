@@ -29,8 +29,8 @@ public:
     [[nodiscard]] virtual ScanResult scan(const musicbox::LibraryRoot& root) = 0;
 };
 
-[[nodiscard]] std::unique_ptr<LibraryScanner> makeLibraryScanner(
-    musicbox::db::TrackRepository& trackRepository,
-    MetadataExtractor& metadataExtractor);
+[[nodiscard]] std::unique_ptr<LibraryScanner>
+makeLibraryScanner(musicbox::db::TrackRepository& trackRepository,
+                   MetadataExtractor& metadataExtractor);
 
 } // namespace musicbox::library

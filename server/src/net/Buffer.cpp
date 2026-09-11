@@ -17,7 +17,9 @@ namespace musicbox::net {
 // return one contiguous span, per the header contract); revisit only if
 // profiling shows this is a hot path (see docs/networking.md).
 
-std::size_t Buffer::readableBytes() const noexcept { return storage_.size() - readOffset_; }
+std::size_t Buffer::readableBytes() const noexcept {
+    return storage_.size() - readOffset_;
+}
 
 std::span<const std::byte> Buffer::readableView() const noexcept {
     return std::span<const std::byte>(storage_.data() + readOffset_, readableBytes());
@@ -42,7 +44,8 @@ void Buffer::append(std::span<const std::byte> data) {
     if (readOffset_ > 0 && readOffset_ >= storage_.size() / 2) {
         // At least half of the buffer is already-consumed slack; shift the
         // remaining readable bytes down to the front before growing further.
-        storage_.erase(storage_.begin(), storage_.begin() + static_cast<std::ptrdiff_t>(readOffset_));
+        storage_.erase(storage_.begin(),
+                       storage_.begin() + static_cast<std::ptrdiff_t>(readOffset_));
         readOffset_ = 0;
     }
 

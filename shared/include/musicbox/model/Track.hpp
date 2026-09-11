@@ -33,8 +33,8 @@ struct Track {
     std::optional<int> bitrateKbps;
 
     std::uint64_t fileSizeBytes = 0;
-    std::string relativePath;   // relative to libraryRootId's absolute path; never exposed to clients
-    std::string contentHash;    // SHA-256 hex digest, used for incremental scan/sync
+    std::string relativePath; // relative to libraryRootId's absolute path; never exposed to clients
+    std::string contentHash;  // SHA-256 hex digest, used for incremental scan/sync
     std::chrono::system_clock::time_point modifiedAt;
 
     bool hasArtwork = false;

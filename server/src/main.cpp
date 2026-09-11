@@ -59,8 +59,7 @@ void runTemporaryDemoServer(std::uint16_t port) {
     });
 
     std::cout << "musicbox-server: listening on 0.0.0.0:" << port
-              << " (TEMPORARY Milestone-1 demo handler -- see server/src/main.cpp)"
-              << std::endl;
+              << " (TEMPORARY Milestone-1 demo handler -- see server/src/main.cpp)" << std::endl;
     loop.listen("0.0.0.0", port);
     loop.run();
 }

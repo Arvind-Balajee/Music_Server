@@ -28,8 +28,7 @@ public:
     ThreadPool& operator=(const ThreadPool&) = delete;
 
     // Submits a task and returns a future for its result.
-    template <typename Fn, typename R = std::invoke_result_t<Fn>>
-    std::future<R> submit(Fn task) {
+    template <typename Fn, typename R = std::invoke_result_t<Fn>> std::future<R> submit(Fn task) {
         auto packaged = std::make_shared<std::packaged_task<R()>>(std::move(task));
         std::future<R> result = packaged->get_future();
         enqueue([packaged] { (*packaged)(); });

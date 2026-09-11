@@ -16,14 +16,16 @@ namespace musicbox::db {
     return std::chrono::system_clock::time_point(std::chrono::milliseconds(millis));
 }
 
-[[nodiscard]] inline std::optional<std::int64_t> toOptionalEpochMillis(std::optional<std::chrono::system_clock::time_point> tp) {
+[[nodiscard]] inline std::optional<std::int64_t>
+toOptionalEpochMillis(std::optional<std::chrono::system_clock::time_point> tp) {
     if (!tp.has_value()) {
         return std::nullopt;
     }
     return toEpochMillis(*tp);
 }
 
-[[nodiscard]] inline std::optional<std::chrono::system_clock::time_point> fromOptionalEpochMillis(std::optional<std::int64_t> millis) {
+[[nodiscard]] inline std::optional<std::chrono::system_clock::time_point>
+fromOptionalEpochMillis(std::optional<std::int64_t> millis) {
     if (!millis.has_value()) {
         return std::nullopt;
     }

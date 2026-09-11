@@ -18,11 +18,17 @@ namespace {
 
 } // namespace
 
-void SelectPoller::add(int fd, bool wantRead, bool wantWrite) { interest_[fd] = {wantRead, wantWrite}; }
+void SelectPoller::add(int fd, bool wantRead, bool wantWrite) {
+    interest_[fd] = {wantRead, wantWrite};
+}
 
-void SelectPoller::modify(int fd, bool wantRead, bool wantWrite) { interest_[fd] = {wantRead, wantWrite}; }
+void SelectPoller::modify(int fd, bool wantRead, bool wantWrite) {
+    interest_[fd] = {wantRead, wantWrite};
+}
 
-void SelectPoller::remove(int fd) { interest_.erase(fd); }
+void SelectPoller::remove(int fd) {
+    interest_.erase(fd);
+}
 
 std::vector<PollEvent> SelectPoller::wait(int timeoutMs) {
     fd_set readSet;
@@ -44,7 +50,7 @@ std::vector<PollEvent> SelectPoller::wait(int timeoutMs) {
         maxFd = std::max(maxFd, fd);
     }
 
-    struct timeval tv {};
+    struct timeval tv{};
     struct timeval* tvPtr = nullptr;
     if (timeoutMs >= 0) {
         tv.tv_sec = timeoutMs / 1000;

@@ -166,7 +166,8 @@ int connectTo(const std::string& host, int port, std::string& error) {
     const std::string portStr = std::to_string(port);
     const int gaiResult = ::getaddrinfo(host.c_str(), portStr.c_str(), &hints, &resolved);
     if (gaiResult != 0 || resolved == nullptr) {
-        error = std::string("DNS/address resolution failed for ") + host + ": " + gai_strerror(gaiResult);
+        error = std::string("DNS/address resolution failed for ") + host + ": " +
+                gai_strerror(gaiResult);
         return -1;
     }
 
@@ -192,7 +193,8 @@ int connectTo(const std::string& host, int port, std::string& error) {
 
 } // namespace
 
-SimpleHttpClient::SimpleHttpClient(std::string hostAndMaybePort, int defaultPort) : port_(defaultPort) {
+SimpleHttpClient::SimpleHttpClient(std::string hostAndMaybePort, int defaultPort)
+    : port_(defaultPort) {
     const auto colonPos = hostAndMaybePort.find(':');
     if (colonPos != std::string::npos) {
         host_ = hostAndMaybePort.substr(0, colonPos);
@@ -205,8 +207,8 @@ SimpleHttpClient::SimpleHttpClient(std::string hostAndMaybePort, int defaultPort
     }
 }
 
-HttpClientResponse SimpleHttpClient::sendRequest(const std::string& requestHead, const char* bodyData,
-                                                  std::size_t bodySize) const {
+HttpClientResponse SimpleHttpClient::sendRequest(const std::string& requestHead,
+                                                 const char* bodyData, std::size_t bodySize) const {
     HttpClientResponse response;
 
     std::string connectError;
@@ -243,8 +245,9 @@ HttpClientResponse SimpleHttpClient::get(const std::string& path) const {
     return sendRequest(head.str(), nullptr, 0);
 }
 
-HttpClientResponse SimpleHttpClient::postFile(const std::string& path, const std::string& relativePath,
-                                               const std::string& absoluteFilePath) const {
+HttpClientResponse SimpleHttpClient::postFile(const std::string& path,
+                                              const std::string& relativePath,
+                                              const std::string& absoluteFilePath) const {
     std::error_code sizeEc;
     const auto fileSize = std::filesystem::file_size(absoluteFilePath, sizeEc);
     if (sizeEc) {

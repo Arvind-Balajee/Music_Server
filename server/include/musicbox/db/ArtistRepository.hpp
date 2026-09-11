@@ -29,6 +29,7 @@ public:
 // See TrackRepository.hpp's makeSqliteTrackRepository for the databasePath
 // contract. Read-only (docs/adr/0006-track-repository-write-methods.md):
 // artist rows are created only via TrackRepository::upsert.
-[[nodiscard]] std::unique_ptr<ArtistRepository> makeSqliteArtistRepository(const std::string& databasePath);
+[[nodiscard]] std::unique_ptr<ArtistRepository>
+makeSqliteArtistRepository(const std::string& databasePath);
 
 } // namespace musicbox::db

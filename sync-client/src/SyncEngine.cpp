@@ -7,8 +7,9 @@
 namespace musicbox::sync {
 
 SyncEngine::SyncEngine(ServerManifestSource& serverManifestSource, UploadTransport& uploadTransport,
-                        FileHasher& hasher)
-    : serverManifestSource_(serverManifestSource), uploadTransport_(uploadTransport), hasher_(hasher) {}
+                       FileHasher& hasher)
+    : serverManifestSource_(serverManifestSource), uploadTransport_(uploadTransport),
+      hasher_(hasher) {}
 
 DiffResult SyncEngine::computeDiff(const std::string& localRootDir, bool forceHash) {
     const LocalScanner scanner;

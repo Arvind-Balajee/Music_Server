@@ -17,7 +17,7 @@ namespace {
 }
 
 [[nodiscard]] HttpResponse makeBodyResponse(HttpStatus status, std::string contentType,
-                                             std::string bodyText) {
+                                            std::string bodyText) {
     HttpResponse response;
     response.statusCode = status;
     response.headers["Content-Type"] = std::move(contentType);

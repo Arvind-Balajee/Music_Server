@@ -83,7 +83,7 @@ void KqueuePoller::remove(int fd) {
 std::vector<PollEvent> KqueuePoller::wait(int timeoutMs) {
     std::array<struct kevent, 256> raw{};
 
-    struct timespec ts {};
+    struct timespec ts{};
     struct timespec* tsPtr = nullptr;
     if (timeoutMs >= 0) {
         ts.tv_sec = timeoutMs / 1000;

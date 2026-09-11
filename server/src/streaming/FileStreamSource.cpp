@@ -55,12 +55,13 @@ public:
 
         ssize_t bytesRead = 0;
         do {
-            bytesRead = ::pread(fd_->get(), destination.data(), toRead, static_cast<off_t>(cursor_));
+            bytesRead =
+                ::pread(fd_->get(), destination.data(), toRead, static_cast<off_t>(cursor_));
         } while (bytesRead < 0 && errno == EINTR);
 
         if (bytesRead < 0) {
             throw std::runtime_error(std::string("FileStreamSource: pread failed: ") +
-                                      std::strerror(errno));
+                                     std::strerror(errno));
         }
         if (bytesRead == 0) {
             // File shrank/was truncated concurrently; stop rather than spin.
@@ -88,8 +89,8 @@ public:
 
     [[nodiscard]] std::uint64_t fileSize() const override { return size_; }
 
-    [[nodiscard]] std::unique_ptr<musicbox::http::ResponseBody> openRange(std::uint64_t offset,
-                                                                           std::uint64_t length) override {
+    [[nodiscard]] std::unique_ptr<musicbox::http::ResponseBody>
+    openRange(std::uint64_t offset, std::uint64_t length) override {
         if (offset > size_ || length > size_ - offset) {
             throw std::runtime_error(
                 "FileStreamSource::openRange: [offset, offset+length) exceeds fileSize()");
@@ -108,22 +109,22 @@ std::unique_ptr<FileStreamSource> openFileStreamSource(const std::string& absolu
     const int fd = ::open(absolutePath.c_str(), O_RDONLY);
     if (fd < 0) {
         throw std::runtime_error("openFileStreamSource: failed to open '" + absolutePath +
-                                  "': " + std::strerror(errno));
+                                 "': " + std::strerror(errno));
     }
     auto holder = std::make_shared<FdHolder>(fd);
 
-    struct stat st {};
+    struct stat st{};
     if (::fstat(holder->get(), &st) != 0) {
         throw std::runtime_error("openFileStreamSource: fstat('" + absolutePath +
-                                  "') failed: " + std::strerror(errno));
+                                 "') failed: " + std::strerror(errno));
     }
     if (!S_ISREG(st.st_mode)) {
         throw std::runtime_error("openFileStreamSource: '" + absolutePath +
-                                  "' is not a regular file");
+                                 "' is not a regular file");
     }
 
     return std::make_unique<FileStreamSourceImpl>(std::move(holder),
-                                                   static_cast<std::uint64_t>(st.st_size));
+                                                  static_cast<std::uint64_t>(st.st_size));
 }
 
 } // namespace musicbox::streaming

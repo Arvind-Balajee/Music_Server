@@ -15,14 +15,16 @@ public:
     // identity in the library). Returns true on success. Implementations should
     // not throw for ordinary transfer failures (return false instead); throwing
     // is reserved for programmer errors.
-    virtual bool uploadFile(const std::string& relativePath, const std::string& absoluteLocalPath) = 0;
+    virtual bool uploadFile(const std::string& relativePath,
+                            const std::string& absoluteLocalPath) = 0;
 };
 
 // No-op transport that only records what would have been uploaded. Used by
 // tests and by `--dry-run`-style callers.
 class NullUploadTransport final : public UploadTransport {
 public:
-    bool uploadFile(const std::string& relativePath, const std::string& absoluteLocalPath) override {
+    bool uploadFile(const std::string& relativePath,
+                    const std::string& absoluteLocalPath) override {
         (void)absoluteLocalPath;
         uploaded_.push_back(relativePath);
         return true;

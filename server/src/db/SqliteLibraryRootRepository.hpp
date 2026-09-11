@@ -14,7 +14,8 @@ public:
 
     [[nodiscard]] std::vector<musicbox::LibraryRoot> list() override;
     musicbox::LibraryRoot upsert(const std::string& absolutePath) override;
-    void markScanned(musicbox::LibraryRootId id, std::chrono::system_clock::time_point when) override;
+    void markScanned(musicbox::LibraryRootId id,
+                     std::chrono::system_clock::time_point when) override;
 
 private:
     SqliteConnection connection_;

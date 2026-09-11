@@ -15,7 +15,8 @@ TEST_CASE("AlbumRepository findById returns nullopt for an unknown id", "[db][al
     CHECK_FALSE(repo->findById(AlbumId(1)).has_value());
 }
 
-TEST_CASE("AlbumRepository sees albums created by TrackRepository::upsert, filterable by artist", "[db][album]") {
+TEST_CASE("AlbumRepository sees albums created by TrackRepository::upsert, filterable by artist",
+          "[db][album]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto trackRepo = makeSqliteTrackRepository(dbUri);
     auto albumRepo = makeSqliteAlbumRepository(dbUri);

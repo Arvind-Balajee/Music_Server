@@ -1,5 +1,5 @@
-#include <catch2/catch_test_macros.hpp>
 #include <array>
+#include <catch2/catch_test_macros.hpp>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -173,7 +173,7 @@ TEST_CASE("An empty range at exactly EOF is valid and reads zero bytes",
 
 TEST_CASE("openFileStreamSource throws for a nonexistent file", "[streaming][filestream]") {
     CHECK_THROWS_AS(openFileStreamSource("/nonexistent/path/musicbox/does/not/exist.flac"),
-                     std::runtime_error);
+                    std::runtime_error);
 }
 
 TEST_CASE("A FileStreamSource can be dropped once its ResponseBody is extracted",

@@ -22,7 +22,8 @@
 // (two independent fd namespaces from the OS's point of view, both just
 // happening to be small ints), so keying by "the fd the test happens to hold"
 // would not match what the server-side callback sees.
-TEST_CASE("EventLoop reassembles a request split across many small sends", "[net][integration][fragmentation]") {
+TEST_CASE("EventLoop reassembles a request split across many small sends",
+          "[net][integration][fragmentation]") {
     constexpr std::uint16_t kPort = 19310;
     const std::string message = "GET /fragmented HTTP/1.1\r\nHost: musicbox.local\r\n\r\n";
 
@@ -81,7 +82,13 @@ TEST_CASE("EventLoop reassembles a request split across many small sends", "[net
         ::close(fd);
     };
 
-    SECTION("1-byte sends") { runCase(1); }
-    SECTION("2-byte sends") { runCase(2); }
-    SECTION("N-byte sends (7 bytes)") { runCase(7); }
+    SECTION("1-byte sends") {
+        runCase(1);
+    }
+    SECTION("2-byte sends") {
+        runCase(2);
+    }
+    SECTION("N-byte sends (7 bytes)") {
+        runCase(7);
+    }
 }

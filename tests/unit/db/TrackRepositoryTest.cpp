@@ -11,7 +11,8 @@ using namespace musicbox::db;
 
 namespace {
 
-TrackUpsert basicUpsert(LibraryRootId rootId, const std::string& relativePath, const std::string& title) {
+TrackUpsert basicUpsert(LibraryRootId rootId, const std::string& relativePath,
+                        const std::string& title) {
     TrackUpsert data;
     data.libraryRootId = rootId;
     data.relativePath = relativePath;
@@ -67,7 +68,8 @@ TEST_CASE("TrackRepository upsert find-or-creates the artist by name", "[db][tra
     CHECK(artist->name == "Daft Punk");
 }
 
-TEST_CASE("TrackRepository upsert updates an existing row for the same (root, relativePath)", "[db][track]") {
+TEST_CASE("TrackRepository upsert updates an existing row for the same (root, relativePath)",
+          "[db][track]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto repo = makeSqliteTrackRepository(dbUri);
     auto roots = makeSqliteLibraryRootRepository(dbUri);
@@ -96,7 +98,8 @@ TEST_CASE("TrackRepository findByPath returns nullopt for an unknown path", "[db
     CHECK_FALSE(repo->findByPath(root.id, "nonexistent.flac").has_value());
 }
 
-TEST_CASE("TrackRepository softDelete hides a track from list() but not findById()", "[db][track]") {
+TEST_CASE("TrackRepository softDelete hides a track from list() but not findById()",
+          "[db][track]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto repo = makeSqliteTrackRepository(dbUri);
     auto roots = makeSqliteLibraryRootRepository(dbUri);
@@ -121,7 +124,8 @@ TEST_CASE("TrackRepository softDelete hides a track from list() but not findById
     CHECK_FALSE(repo->resolveAbsolutePath(track.id).has_value());
 }
 
-TEST_CASE("TrackRepository softDelete is idempotent and reports false the second time", "[db][track]") {
+TEST_CASE("TrackRepository softDelete is idempotent and reports false the second time",
+          "[db][track]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto repo = makeSqliteTrackRepository(dbUri);
     auto roots = makeSqliteLibraryRootRepository(dbUri);
@@ -143,7 +147,8 @@ TEST_CASE("TrackRepository upsert reappearance clears deletedAt on the same row"
     REQUIRE(repo->softDelete(original.id, std::chrono::system_clock::now()));
 
     const auto reappeared = repo->upsert(data);
-    CHECK(reappeared.id == original.id); // UNIQUE(library_root_id, relative_path) -- same row reused
+    CHECK(reappeared.id ==
+          original.id); // UNIQUE(library_root_id, relative_path) -- same row reused
     const auto found = repo->findById(original.id);
     REQUIRE(found.has_value());
     CHECK_FALSE(found->deletedAt.has_value());
@@ -163,13 +168,15 @@ TEST_CASE("TrackRepository listByLibraryRoot includes soft-deleted rows", "[db][
     CHECK(all.front().deletedAt.has_value());
 }
 
-TEST_CASE("TrackRepository resolveAbsolutePath joins the library root path with relativePath", "[db][track]") {
+TEST_CASE("TrackRepository resolveAbsolutePath joins the library root path with relativePath",
+          "[db][track]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto repo = makeSqliteTrackRepository(dbUri);
     auto roots = makeSqliteLibraryRootRepository(dbUri);
     const auto root = roots->upsert("/media/music");
 
-    const auto track = repo->upsert(basicUpsert(root.id, "Daft Punk/RAM/Instant Crush.flac", "Instant Crush"));
+    const auto track =
+        repo->upsert(basicUpsert(root.id, "Daft Punk/RAM/Instant Crush.flac", "Instant Crush"));
     const auto path = repo->resolveAbsolutePath(track.id);
     REQUIRE(path.has_value());
     CHECK(*path == "/media/music/Daft Punk/RAM/Instant Crush.flac");
@@ -188,7 +195,8 @@ TEST_CASE("TrackRepository list supports pagination", "[db][track]") {
     const auto root = roots->upsert("/media/music");
 
     for (int i = 0; i < 5; ++i) {
-        repo->upsert(basicUpsert(root.id, "track" + std::to_string(i) + ".flac", "Track " + std::to_string(i)));
+        repo->upsert(basicUpsert(root.id, "track" + std::to_string(i) + ".flac",
+                                 "Track " + std::to_string(i)));
     }
 
     TrackQuery query;
@@ -204,7 +212,8 @@ TEST_CASE("TrackRepository list supports pagination", "[db][track]") {
     CHECK(repo->count(query) == 5);
 }
 
-TEST_CASE("TrackRepository list search matches title, artist, and album case-insensitively", "[db][track]") {
+TEST_CASE("TrackRepository list search matches title, artist, and album case-insensitively",
+          "[db][track]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto repo = makeSqliteTrackRepository(dbUri);
     auto roots = makeSqliteLibraryRootRepository(dbUri);

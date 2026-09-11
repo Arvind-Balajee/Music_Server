@@ -40,7 +40,9 @@ TEST_CASE("EventLoop handles many connections opened and closed in rapid sequenc
         readableCount.fetch_add(1, std::memory_order_relaxed);
         handleEcho(connection);
     });
-    server.onClosed([&](musicbox::net::TcpConnection&) { closedCount.fetch_add(1, std::memory_order_relaxed); });
+    server.onClosed([&](musicbox::net::TcpConnection&) {
+        closedCount.fetch_add(1, std::memory_order_relaxed);
+    });
     server.start(kPort);
 
     for (int i = 0; i < kConnections; ++i) {

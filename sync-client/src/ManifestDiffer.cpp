@@ -25,8 +25,9 @@ std::string joinPath(const std::string& root, const std::string& relativePath) {
 } // namespace
 
 DiffResult ManifestDiffer::diff(const std::vector<LocalFileEntry>& local,
-                                 const std::vector<ServerManifestEntry>& server, const std::string& localRootDir,
-                                 FileHasher& hasher, bool forceHash) const {
+                                const std::vector<ServerManifestEntry>& server,
+                                const std::string& localRootDir, FileHasher& hasher,
+                                bool forceHash) const {
     DiffResult result;
 
     std::unordered_map<std::string, const ServerManifestEntry*> serverByPath;
@@ -52,8 +53,9 @@ DiffResult ManifestDiffer::diff(const std::vector<LocalFileEntry>& local,
 
         const ServerManifestEntry& serverEntry = *it->second;
 
-        const bool metadataMatches = !forceHash && localEntry.sizeBytes == serverEntry.sizeBytes &&
-                                      truncateToSeconds(localEntry.mtime) == truncateToSeconds(serverEntry.mtime);
+        const bool metadataMatches =
+            !forceHash && localEntry.sizeBytes == serverEntry.sizeBytes &&
+            truncateToSeconds(localEntry.mtime) == truncateToSeconds(serverEntry.mtime);
 
         if (metadataMatches) {
             // Cheap pre-check says "definitely unchanged" -- skip hashing.

@@ -25,7 +25,9 @@ ssize_t TcpConnection::readInto() {
     return n;
 }
 
-void TcpConnection::queueWrite(std::span<const std::byte> data) { outbound_.append(data); }
+void TcpConnection::queueWrite(std::span<const std::byte> data) {
+    outbound_.append(data);
+}
 
 void TcpConnection::flushOutbound() {
     if (outbound_.empty()) {

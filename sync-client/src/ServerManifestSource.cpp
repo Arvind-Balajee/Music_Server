@@ -22,19 +22,22 @@ std::vector<ServerManifestEntry> HttpServerManifestSource::fetchManifest() {
     const HttpClientResponse response = client.get("/api/v1/sync/manifest");
 
     if (!response.connected) {
-        throw std::runtime_error("HttpServerManifestSource: could not reach " + serverHost_ + ": " + response.error);
+        throw std::runtime_error("HttpServerManifestSource: could not reach " + serverHost_ + ": " +
+                                 response.error);
     }
     if (response.statusCode != 200) {
-        throw std::runtime_error("HttpServerManifestSource: server returned HTTP " +
-                                  std::to_string(response.statusCode) +
-                                  " for GET /api/v1/sync/manifest (endpoint may not be implemented yet)");
+        throw std::runtime_error(
+            "HttpServerManifestSource: server returned HTTP " +
+            std::to_string(response.statusCode) +
+            " for GET /api/v1/sync/manifest (endpoint may not be implemented yet)");
     }
 
     nlohmann::json parsed;
     try {
         parsed = nlohmann::json::parse(response.body);
     } catch (const nlohmann::json::parse_error& e) {
-        throw std::runtime_error(std::string("HttpServerManifestSource: malformed JSON response: ") + e.what());
+        throw std::runtime_error(
+            std::string("HttpServerManifestSource: malformed JSON response: ") + e.what());
     }
     if (!parsed.is_array()) {
         throw std::runtime_error("HttpServerManifestSource: expected a JSON array response");

@@ -36,7 +36,8 @@ public:
 
     // Returns std::nullopt if the file cannot be parsed (corrupt/unsupported) —
     // the scanner logs and skips such files rather than failing the whole scan.
-    [[nodiscard]] virtual std::optional<RawTrackMetadata> extract(const std::string& absolutePath) = 0;
+    [[nodiscard]] virtual std::optional<RawTrackMetadata>
+    extract(const std::string& absolutePath) = 0;
 };
 
 [[nodiscard]] std::unique_ptr<MetadataExtractor> makeDefaultMetadataExtractor();

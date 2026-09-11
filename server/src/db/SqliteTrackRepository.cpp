@@ -23,7 +23,8 @@ std::optional<std::int64_t> toOptionalInt64(std::optional<int> value) {
 // Find-or-create by unique name. Must run inside a transaction the caller
 // already holds (see SqliteTrackRepository::upsert) so the SELECT-then-INSERT
 // isn't racy against another writer.
-std::optional<musicbox::ArtistId> resolveArtist(SqliteConnection& connection, const std::optional<std::string>& name) {
+std::optional<musicbox::ArtistId> resolveArtist(SqliteConnection& connection,
+                                                const std::optional<std::string>& name) {
     if (!name.has_value() || name->empty()) {
         return std::nullopt;
     }
@@ -45,14 +46,17 @@ std::optional<musicbox::ArtistId> resolveArtist(SqliteConnection& connection, co
 // UNIQUE(title, album_artist_id) index, which -- per SQL semantics -- would
 // treat every NULL album_artist_id as distinct and never collapse duplicates
 // (see docs/adr/0006-track-repository-write-methods.md).
-std::optional<musicbox::AlbumId> resolveAlbum(SqliteConnection& connection, const std::optional<std::string>& title,
-                                               std::optional<musicbox::ArtistId> albumArtistId) {
+std::optional<musicbox::AlbumId> resolveAlbum(SqliteConnection& connection,
+                                              const std::optional<std::string>& title,
+                                              std::optional<musicbox::ArtistId> albumArtistId) {
     if (!title.has_value() || title->empty()) {
         return std::nullopt;
     }
 
-    const char* selectSql = albumArtistId.has_value() ? "SELECT id FROM albums WHERE title = ? AND album_artist_id = ?;"
-                                                        : "SELECT id FROM albums WHERE title = ? AND album_artist_id IS NULL;";
+    const char* selectSql =
+        albumArtistId.has_value()
+            ? "SELECT id FROM albums WHERE title = ? AND album_artist_id = ?;"
+            : "SELECT id FROM albums WHERE title = ? AND album_artist_id IS NULL;";
     SqliteStatement select(connection, selectSql);
     select.bindText(1, *title);
     if (albumArtistId.has_value()) {
@@ -64,17 +68,23 @@ std::optional<musicbox::AlbumId> resolveAlbum(SqliteConnection& connection, cons
 
     SqliteStatement insert(connection, "INSERT INTO albums(title, album_artist_id) VALUES(?, ?);");
     insert.bindText(1, *title);
-    insert.bindOptionalInt64(2, albumArtistId.has_value() ? std::optional<std::int64_t>(albumArtistId->value()) : std::nullopt);
+    insert.bindOptionalInt64(2, albumArtistId.has_value()
+                                    ? std::optional<std::int64_t>(albumArtistId->value())
+                                    : std::nullopt);
     insert.run();
     return musicbox::AlbumId(connection.lastInsertRowId());
 }
 
 } // namespace
 
-SqliteTrackRepository::SqliteTrackRepository(const std::string& databasePath) : connection_(databasePath) { migrate(connection_); }
+SqliteTrackRepository::SqliteTrackRepository(const std::string& databasePath)
+    : connection_(databasePath) {
+    migrate(connection_);
+}
 
 std::optional<musicbox::Track> SqliteTrackRepository::findById(musicbox::TrackId id) {
-    SqliteStatement stmt(connection_, std::string("SELECT ") + kTrackColumns + " FROM tracks WHERE id = ?;");
+    SqliteStatement stmt(connection_,
+                         std::string("SELECT ") + kTrackColumns + " FROM tracks WHERE id = ?;");
     stmt.bindInt64(1, id.value());
     if (!stmt.step()) {
         return std::nullopt;
@@ -87,8 +97,12 @@ namespace {
 // Both list() and count() filter identically; ?1=artistId, ?2=albumId,
 // ?3=search pattern (already wrapped in '%...%') or NULL to disable a filter.
 void bindTrackQueryFilters(SqliteStatement& stmt, const TrackQuery& query) {
-    stmt.bindOptionalInt64(1, query.artistId.has_value() ? std::optional<std::int64_t>(query.artistId->value()) : std::nullopt);
-    stmt.bindOptionalInt64(2, query.albumId.has_value() ? std::optional<std::int64_t>(query.albumId->value()) : std::nullopt);
+    stmt.bindOptionalInt64(1, query.artistId.has_value()
+                                  ? std::optional<std::int64_t>(query.artistId->value())
+                                  : std::nullopt);
+    stmt.bindOptionalInt64(2, query.albumId.has_value()
+                                  ? std::optional<std::int64_t>(query.albumId->value())
+                                  : std::nullopt);
     if (query.search.has_value()) {
         stmt.bindText(3, "%" + *query.search + "%");
     } else {
@@ -100,14 +114,17 @@ constexpr const char* kTrackFilterWhere =
     "WHERE t.deleted_at IS NULL "
     "AND (?1 IS NULL OR t.artist_id = ?1) "
     "AND (?2 IS NULL OR t.album_id = ?2) "
-    "AND (?3 IS NULL OR t.title LIKE ?3 COLLATE NOCASE OR ar.name LIKE ?3 COLLATE NOCASE OR al.title LIKE ?3 COLLATE NOCASE)";
+    "AND (?3 IS NULL OR t.title LIKE ?3 COLLATE NOCASE OR ar.name LIKE ?3 COLLATE NOCASE OR "
+    "al.title LIKE ?3 COLLATE NOCASE)";
 
 } // namespace
 
 std::vector<musicbox::Track> SqliteTrackRepository::list(const TrackQuery& query) {
     std::ostringstream sql;
-    sql << "SELECT t.id, t.library_root_id, t.title, t.artist_id, t.album_id, t.track_number, t.disc_number, "
-           "t.year, t.genre, t.duration_ms, t.codec, t.bitrate_kbps, t.file_size_bytes, t.relative_path, "
+    sql << "SELECT t.id, t.library_root_id, t.title, t.artist_id, t.album_id, t.track_number, "
+           "t.disc_number, "
+           "t.year, t.genre, t.duration_ms, t.codec, t.bitrate_kbps, t.file_size_bytes, "
+           "t.relative_path, "
            "t.content_hash, t.modified_at, t.has_artwork, t.deleted_at "
            "FROM tracks t "
            "LEFT JOIN artists ar ON ar.id = t.artist_id "
@@ -141,10 +158,9 @@ std::size_t SqliteTrackRepository::count(const TrackQuery& query) {
 }
 
 std::optional<std::string> SqliteTrackRepository::resolveAbsolutePath(musicbox::TrackId id) {
-    SqliteStatement stmt(connection_,
-                          "SELECT lr.path, t.relative_path FROM tracks t "
-                          "JOIN library_roots lr ON lr.id = t.library_root_id "
-                          "WHERE t.id = ? AND t.deleted_at IS NULL;");
+    SqliteStatement stmt(connection_, "SELECT lr.path, t.relative_path FROM tracks t "
+                                      "JOIN library_roots lr ON lr.id = t.library_root_id "
+                                      "WHERE t.id = ? AND t.deleted_at IS NULL;");
     stmt.bindInt64(1, id.value());
     if (!stmt.step()) {
         return std::nullopt;
@@ -154,8 +170,12 @@ std::optional<std::string> SqliteTrackRepository::resolveAbsolutePath(musicbox::
     return (root / relative).string();
 }
 
-std::optional<musicbox::Track> SqliteTrackRepository::findByPath(musicbox::LibraryRootId libraryRootId, const std::string& relativePath) {
-    SqliteStatement stmt(connection_, std::string("SELECT ") + kTrackColumns + " FROM tracks WHERE library_root_id = ? AND relative_path = ?;");
+std::optional<musicbox::Track>
+SqliteTrackRepository::findByPath(musicbox::LibraryRootId libraryRootId,
+                                  const std::string& relativePath) {
+    SqliteStatement stmt(connection_,
+                         std::string("SELECT ") + kTrackColumns +
+                             " FROM tracks WHERE library_root_id = ? AND relative_path = ?;");
     stmt.bindInt64(1, libraryRootId.value());
     stmt.bindText(2, relativePath);
     if (!stmt.step()) {
@@ -164,8 +184,10 @@ std::optional<musicbox::Track> SqliteTrackRepository::findByPath(musicbox::Libra
     return mapTrackRow(stmt);
 }
 
-std::vector<musicbox::Track> SqliteTrackRepository::listByLibraryRoot(musicbox::LibraryRootId libraryRootId) {
-    SqliteStatement stmt(connection_, std::string("SELECT ") + kTrackColumns + " FROM tracks WHERE library_root_id = ?;");
+std::vector<musicbox::Track>
+SqliteTrackRepository::listByLibraryRoot(musicbox::LibraryRootId libraryRootId) {
+    SqliteStatement stmt(connection_, std::string("SELECT ") + kTrackColumns +
+                                          " FROM tracks WHERE library_root_id = ?;");
     stmt.bindInt64(1, libraryRootId.value());
 
     std::vector<musicbox::Track> results;
@@ -182,7 +204,8 @@ musicbox::Track SqliteTrackRepository::upsert(const TrackUpsert& data) {
     // A track without an explicit album artist tag conventionally shares the
     // track artist as its album's artist (the common single-artist-album
     // case); an explicit albumArtist tag always wins.
-    const auto albumArtistId = data.albumArtist.has_value() ? resolveArtist(connection_, data.albumArtist) : artistId;
+    const auto albumArtistId =
+        data.albumArtist.has_value() ? resolveArtist(connection_, data.albumArtist) : artistId;
     const auto albumId = resolveAlbum(connection_, data.albumTitle, albumArtistId);
 
     SqliteStatement upsertStmt(connection_, R"SQL(
@@ -211,8 +234,10 @@ musicbox::Track SqliteTrackRepository::upsert(const TrackUpsert& data) {
     )SQL");
     upsertStmt.bindInt64(1, data.libraryRootId.value());
     upsertStmt.bindText(2, data.title);
-    upsertStmt.bindOptionalInt64(3, artistId.has_value() ? std::optional<std::int64_t>(artistId->value()) : std::nullopt);
-    upsertStmt.bindOptionalInt64(4, albumId.has_value() ? std::optional<std::int64_t>(albumId->value()) : std::nullopt);
+    upsertStmt.bindOptionalInt64(
+        3, artistId.has_value() ? std::optional<std::int64_t>(artistId->value()) : std::nullopt);
+    upsertStmt.bindOptionalInt64(
+        4, albumId.has_value() ? std::optional<std::int64_t>(albumId->value()) : std::nullopt);
     upsertStmt.bindOptionalInt64(5, toOptionalInt64(data.trackNumber));
     upsertStmt.bindOptionalInt64(6, toOptionalInt64(data.discNumber));
     upsertStmt.bindOptionalInt64(7, toOptionalInt64(data.year));
@@ -227,7 +252,8 @@ musicbox::Track SqliteTrackRepository::upsert(const TrackUpsert& data) {
     upsertStmt.bindInt64(16, data.hasArtwork ? 1 : 0);
 
     if (!upsertStmt.step()) {
-        throw std::runtime_error("SqliteTrackRepository::upsert: INSERT ... RETURNING produced no row");
+        throw std::runtime_error(
+            "SqliteTrackRepository::upsert: INSERT ... RETURNING produced no row");
     }
     const auto id = musicbox::TrackId(upsertStmt.columnInt64(0));
     // SQLite refuses to COMMIT while any statement on the connection is still
@@ -261,8 +287,10 @@ musicbox::Track SqliteTrackRepository::upsert(const TrackUpsert& data) {
     return track;
 }
 
-bool SqliteTrackRepository::softDelete(musicbox::TrackId id, std::chrono::system_clock::time_point when) {
-    SqliteStatement stmt(connection_, "UPDATE tracks SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL;");
+bool SqliteTrackRepository::softDelete(musicbox::TrackId id,
+                                       std::chrono::system_clock::time_point when) {
+    SqliteStatement stmt(connection_,
+                         "UPDATE tracks SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL;");
     stmt.bindInt64(1, toEpochMillis(when));
     stmt.bindInt64(2, id.value());
     stmt.run();

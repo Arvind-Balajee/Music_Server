@@ -17,9 +17,11 @@
 // unmodified, without the server hanging, crashing, or growing its outbound
 // Buffer unboundedly waiting for a `send()` that never fully drains in one
 // call (see TcpConnection::flushOutbound()'s partial-write contract).
-TEST_CASE("EventLoop delivers a large response correctly to a slow client", "[net][integration][backpressure]") {
+TEST_CASE("EventLoop delivers a large response correctly to a slow client",
+          "[net][integration][backpressure]") {
     constexpr std::uint16_t kPort = 19311;
-    constexpr std::size_t kPayloadSize = 256 * 1024; // 256 KiB: several times a typical socket buffer.
+    constexpr std::size_t kPayloadSize =
+        256 * 1024; // 256 KiB: several times a typical socket buffer.
 
     std::string payload(kPayloadSize, '\0');
     for (std::size_t i = 0; i < payload.size(); ++i) {
@@ -32,7 +34,8 @@ TEST_CASE("EventLoop delivers a large response correctly to a slow client", "[ne
         inbound.consume(inbound.readableBytes());
 
         if (!connection.hasPendingWrites()) {
-            connection.queueWrite(std::as_bytes(std::span<const char>(payload.data(), payload.size())));
+            connection.queueWrite(
+                std::as_bytes(std::span<const char>(payload.data(), payload.size())));
             connection.closeAfterFlush();
         }
     });

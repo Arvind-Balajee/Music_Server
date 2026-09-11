@@ -8,7 +8,8 @@
 #include <thread>
 #include <vector>
 
-TEST_CASE("ThreadPool runs a submitted task and returns its result via future", "[net][threadpool]") {
+TEST_CASE("ThreadPool runs a submitted task and returns its result via future",
+          "[net][threadpool]") {
     musicbox::net::ThreadPool pool(2);
     std::future<int> result = pool.submit([] { return 21 * 2; });
     CHECK(result.get() == 42);
@@ -24,7 +25,8 @@ TEST_CASE("ThreadPool runs many tasks across its worker threads", "[net][threadp
     futures.reserve(kTasks);
 
     for (int i = 0; i < kTasks; ++i) {
-        futures.push_back(pool.submit([&counter] { counter.fetch_add(1, std::memory_order_relaxed); }));
+        futures.push_back(
+            pool.submit([&counter] { counter.fetch_add(1, std::memory_order_relaxed); }));
     }
     for (auto& f : futures) {
         f.get();

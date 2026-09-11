@@ -48,7 +48,8 @@ std::string uniqueDbUri() {
 
 } // namespace
 
-TEST_CASE("LibraryScanner inserts a new file and extracts metadata exactly once", "[library][scanner]") {
+TEST_CASE("LibraryScanner inserts a new file and extracts metadata exactly once",
+          "[library][scanner]") {
     TempDirFixture dir;
     const auto filePath = dir.writeMinimalWav("song.wav");
 
@@ -74,7 +75,8 @@ TEST_CASE("LibraryScanner inserts a new file and extracts metadata exactly once"
     CHECK(found->title == "Song");
 }
 
-TEST_CASE("LibraryScanner rescan of an untouched file does not re-extract metadata", "[library][scanner]") {
+TEST_CASE("LibraryScanner rescan of an untouched file does not re-extract metadata",
+          "[library][scanner]") {
     TempDirFixture dir;
     const auto filePath = dir.writeMinimalWav("song.wav");
 
@@ -95,10 +97,12 @@ TEST_CASE("LibraryScanner rescan of an untouched file does not re-extract metada
     CHECK(result.inserted == 0);
     CHECK(result.updated == 0);
     CHECK(result.unchanged == 1);
-    CHECK(extractor.extractCallCount == 1); // still 1 -- the cheap size+mtime check skipped re-extraction entirely
+    CHECK(extractor.extractCallCount ==
+          1); // still 1 -- the cheap size+mtime check skipped re-extraction entirely
 }
 
-TEST_CASE("LibraryScanner re-extracts and marks updated when file content changes", "[library][scanner]") {
+TEST_CASE("LibraryScanner re-extracts and marks updated when file content changes",
+          "[library][scanner]") {
     TempDirFixture dir;
     const auto filePath = dir.writeMinimalWav("song.wav", /*durationMs=*/500);
 
@@ -129,7 +133,8 @@ TEST_CASE("LibraryScanner re-extracts and marks updated when file content change
     CHECK(found->title == "Song v2");
 }
 
-TEST_CASE("LibraryScanner treats a pure mtime touch with identical content as unchanged", "[library][scanner]") {
+TEST_CASE("LibraryScanner treats a pure mtime touch with identical content as unchanged",
+          "[library][scanner]") {
     TempDirFixture dir;
     const auto filePath = dir.writeMinimalWav("song.wav");
 
@@ -157,7 +162,8 @@ TEST_CASE("LibraryScanner treats a pure mtime touch with identical content as un
     CHECK(result.updated == 0);
 }
 
-TEST_CASE("LibraryScanner soft-deletes a track whose file was removed from disk", "[library][scanner]") {
+TEST_CASE("LibraryScanner soft-deletes a track whose file was removed from disk",
+          "[library][scanner]") {
     TempDirFixture dir;
     const auto filePath = dir.writeMinimalWav("song.wav");
 
@@ -216,7 +222,8 @@ TEST_CASE("LibraryScanner skips files the metadata extractor can't parse", "[lib
     auto rootRepo = musicbox::db::makeSqliteLibraryRootRepository(dbUri);
     const auto root = rootRepo->upsert(dir.path().string());
 
-    FakeMetadataExtractor extractor; // byPath left empty -> extract() returns nullopt for everything
+    FakeMetadataExtractor
+        extractor; // byPath left empty -> extract() returns nullopt for everything
 
     auto scanner = makeLibraryScanner(*trackRepo, extractor);
     const auto result = scanner->scan(root);

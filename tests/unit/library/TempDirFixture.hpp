@@ -18,7 +18,8 @@ public:
     TempDirFixture() {
         const auto base = std::filesystem::temp_directory_path();
         static int counter = 0;
-        path_ = base / ("musicbox_library_test_" + std::to_string(::getpid()) + "_" + std::to_string(counter++));
+        path_ = base / ("musicbox_library_test_" + std::to_string(::getpid()) + "_" +
+                        std::to_string(counter++));
         std::filesystem::create_directories(path_);
     }
 
@@ -32,7 +33,8 @@ public:
 
     [[nodiscard]] const std::filesystem::path& path() const noexcept { return path_; }
 
-    std::filesystem::path writeFile(const std::string& relativePath, const std::string& content) const {
+    std::filesystem::path writeFile(const std::string& relativePath,
+                                    const std::string& content) const {
         const std::filesystem::path full = path_ / relativePath;
         std::filesystem::create_directories(full.parent_path());
         std::ofstream out(full, std::ios::binary);
@@ -45,7 +47,7 @@ public:
     // durationMs long) -- real enough for TagLib to open and report
     // duration/codec, without needing a checked-in binary fixture.
     std::filesystem::path writeMinimalWav(const std::string& relativePath, int durationMs = 500,
-                                            int sampleRate = 44100) const {
+                                          int sampleRate = 44100) const {
         const std::filesystem::path full = path_ / relativePath;
         std::filesystem::create_directories(full.parent_path());
 

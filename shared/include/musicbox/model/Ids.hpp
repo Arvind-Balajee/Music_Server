@@ -10,8 +10,7 @@ namespace musicbox {
 // are distinct types even though both wrap an int64_t, so a value from one
 // entity can never be accidentally passed where another is expected.
 // See docs/adr and docs/database.md for rationale.
-template <typename Tag>
-class Id {
+template <typename Tag> class Id {
 public:
     using ValueType = std::int64_t;
 
@@ -46,8 +45,7 @@ using LibraryRootId = Id<LibraryRootTag>;
 } // namespace musicbox
 
 // Enables Id<Tag> as a key in std::unordered_map/std::unordered_set.
-template <typename Tag>
-struct std::hash<musicbox::Id<Tag>> {
+template <typename Tag> struct std::hash<musicbox::Id<Tag>> {
     std::size_t operator()(const musicbox::Id<Tag>& id) const noexcept {
         return std::hash<typename musicbox::Id<Tag>::ValueType>{}(id.value());
     }

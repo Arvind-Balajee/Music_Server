@@ -7,14 +7,16 @@ namespace musicbox::sync {
 HttpUploadTransport::HttpUploadTransport(std::string serverHost, int defaultPort)
     : serverHost_(std::move(serverHost)), defaultPort_(defaultPort) {}
 
-bool HttpUploadTransport::uploadFile(const std::string& relativePath, const std::string& absoluteLocalPath) {
+bool HttpUploadTransport::uploadFile(const std::string& relativePath,
+                                     const std::string& absoluteLocalPath) {
     const SimpleHttpClient client(serverHost_, defaultPort_);
 
     // Proposed endpoint (docs/api.md, NOT YET IMPLEMENTED server-side):
     //   POST /api/v1/sync/tracks
     //   Headers: X-Relative-Path: <relativePath>, Content-Length: <size>
     //   Body: raw file bytes
-    const HttpClientResponse response = client.postFile("/api/v1/sync/tracks", relativePath, absoluteLocalPath);
+    const HttpClientResponse response =
+        client.postFile("/api/v1/sync/tracks", relativePath, absoluteLocalPath);
 
     // Ordinary transfer failures (unreachable server, non-2xx, endpoint not
     // implemented yet) are reported as `false` rather than thrown, so a `push`

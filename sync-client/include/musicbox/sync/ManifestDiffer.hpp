@@ -30,10 +30,9 @@ namespace musicbox::sync {
 class ManifestDiffer {
 public:
     [[nodiscard]] DiffResult diff(const std::vector<LocalFileEntry>& local,
-                                   const std::vector<ServerManifestEntry>& server,
-                                   const std::string& localRootDir,
-                                   FileHasher& hasher,
-                                   bool forceHash = false) const;
+                                  const std::vector<ServerManifestEntry>& server,
+                                  const std::string& localRootDir, FileHasher& hasher,
+                                  bool forceHash = false) const;
 };
 
 } // namespace musicbox::sync

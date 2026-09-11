@@ -13,7 +13,8 @@ public:
     explicit SqlitePlaylistRepository(const std::string& databasePath);
 
     [[nodiscard]] std::optional<musicbox::Playlist> findById(musicbox::PlaylistId id) override;
-    [[nodiscard]] std::vector<musicbox::Playlist> list(std::size_t limit, std::size_t offset) override;
+    [[nodiscard]] std::vector<musicbox::Playlist> list(std::size_t limit,
+                                                       std::size_t offset) override;
 
     [[nodiscard]] musicbox::Playlist create(std::string name) override;
     [[nodiscard]] bool rename(musicbox::PlaylistId id, std::string newName) override;

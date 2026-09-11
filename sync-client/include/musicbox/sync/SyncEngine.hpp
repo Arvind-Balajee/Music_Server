@@ -26,7 +26,8 @@ struct PushSummary {
 // Mock/Null/Fake implementations (Plan.md §25) instead of the Http* ones.
 class SyncEngine {
 public:
-    SyncEngine(ServerManifestSource& serverManifestSource, UploadTransport& uploadTransport, FileHasher& hasher);
+    SyncEngine(ServerManifestSource& serverManifestSource, UploadTransport& uploadTransport,
+               FileHasher& hasher);
 
     // Scans localRootDir, diffs against the server manifest, and uploads every
     // new/modified file (skipped when dryRun is true). Deleted/unchanged files

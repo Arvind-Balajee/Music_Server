@@ -34,15 +34,16 @@ public:
     // Sends the contents of absoluteFilePath as the POST body, with headers
     // identifying the track's relative path and content length. See docs/api.md
     // "Proposed: POST /api/v1/sync/tracks".
-    [[nodiscard]] HttpClientResponse postFile(const std::string& path, const std::string& relativePath,
-                                               const std::string& absoluteFilePath) const;
+    [[nodiscard]] HttpClientResponse postFile(const std::string& path,
+                                              const std::string& relativePath,
+                                              const std::string& absoluteFilePath) const;
 
 private:
     std::string host_;
     int port_;
 
-    [[nodiscard]] HttpClientResponse sendRequest(const std::string& requestHead, const char* bodyData,
-                                                  std::size_t bodySize) const;
+    [[nodiscard]] HttpClientResponse sendRequest(const std::string& requestHead,
+                                                 const char* bodyData, std::size_t bodySize) const;
 };
 
 } // namespace musicbox::sync

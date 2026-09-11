@@ -70,7 +70,7 @@ TEST_CASE("Parser drains two pipelined requests delivered in a single feed() cal
           "[http][parser]") {
     HttpRequestParser parser;
     const std::string twoRequests = "GET /a HTTP/1.1\r\nHost: x\r\n\r\n"
-                                     "GET /b HTTP/1.1\r\nHost: y\r\n\r\n";
+                                    "GET /b HTTP/1.1\r\nHost: y\r\n\r\n";
     parser.feed(asBytes(twoRequests));
 
     auto first = parser.next();
@@ -92,8 +92,7 @@ TEST_CASE("Parser drains two pipelined requests delivered in a single feed() cal
 TEST_CASE("Parser handles a request split byte-by-byte across the header/body boundary",
           "[http][parser]") {
     HttpRequestParser parser;
-    const std::string request =
-        "POST /api/v1/playlists HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello";
+    const std::string request = "POST /api/v1/playlists HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello";
 
     musicbox::http::ParseResult result;
     for (char c : request) {

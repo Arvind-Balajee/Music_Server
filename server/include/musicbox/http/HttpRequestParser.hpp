@@ -21,7 +21,7 @@ enum class ParseStatus {
 
 struct ParseResult {
     ParseStatus status = ParseStatus::NeedMoreData;
-    HttpRequest request;                            // valid iff status == Complete
+    HttpRequest request;                             // valid iff status == Complete
     HttpStatus errorStatus = HttpStatus::BadRequest; // valid iff status == Error
 };
 

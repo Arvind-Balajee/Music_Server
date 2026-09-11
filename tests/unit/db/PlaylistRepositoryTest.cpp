@@ -79,7 +79,8 @@ TEST_CASE("PlaylistRepository addTrack/removeTrack maintain playlist order", "[d
     CHECK(tracks[1].id == trackC.id); // order preserved despite the gap left by removing B
 }
 
-TEST_CASE("PlaylistRepository addTrack is idempotent for an already-added track", "[db][playlist]") {
+TEST_CASE("PlaylistRepository addTrack is idempotent for an already-added track",
+          "[db][playlist]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto playlistRepo = makeSqlitePlaylistRepository(dbUri);
     auto trackRepo = makeSqliteTrackRepository(dbUri);
@@ -94,7 +95,9 @@ TEST_CASE("PlaylistRepository addTrack is idempotent for an already-added track"
     CHECK(playlistRepo->tracks(playlist.id).size() == 1);
 }
 
-TEST_CASE("PlaylistRepository addTrack/removeTrack report false for a nonexistent playlist or track", "[db][playlist]") {
+TEST_CASE(
+    "PlaylistRepository addTrack/removeTrack report false for a nonexistent playlist or track",
+    "[db][playlist]") {
     const auto dbUri = musicbox::test::uniqueMemoryDbUri();
     auto playlistRepo = makeSqlitePlaylistRepository(dbUri);
     auto trackRepo = makeSqliteTrackRepository(dbUri);

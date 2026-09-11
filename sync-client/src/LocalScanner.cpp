@@ -12,7 +12,8 @@ namespace fs = std::filesystem;
 namespace {
 
 std::string toLower(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return s;
 }
 
@@ -21,7 +22,8 @@ std::string toLower(std::string s) {
 // system_clock's own duration precision (libc++'s file_clock is
 // nanosecond-resolution and doesn't implicitly convert).
 std::chrono::system_clock::time_point toSystemTime(fs::file_time_type ftime) {
-    return std::chrono::time_point_cast<std::chrono::system_clock::duration>(std::chrono::file_clock::to_sys(ftime));
+    return std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+        std::chrono::file_clock::to_sys(ftime));
 }
 
 } // namespace

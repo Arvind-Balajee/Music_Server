@@ -34,7 +34,8 @@ TEST_CASE("Buffer append makes bytes readable in order", "[net][buffer]") {
     CHECK_FALSE(buffer.empty());
 }
 
-TEST_CASE("Buffer consume advances the read cursor without disturbing remaining bytes", "[net][buffer]") {
+TEST_CASE("Buffer consume advances the read cursor without disturbing remaining bytes",
+          "[net][buffer]") {
     musicbox::net::Buffer buffer;
     buffer.append(asBytes("abcdefghij"));
 
@@ -57,8 +58,9 @@ TEST_CASE("Buffer consuming everything then appending again starts clean", "[net
     CHECK(toString(buffer.readableView()) == "second");
 }
 
-TEST_CASE("Buffer partial consume followed by many appends preserves content (compaction correctness)",
-          "[net][buffer]") {
+TEST_CASE(
+    "Buffer partial consume followed by many appends preserves content (compaction correctness)",
+    "[net][buffer]") {
     musicbox::net::Buffer buffer;
 
     // Simulate a connection that reads a large header off the front, then

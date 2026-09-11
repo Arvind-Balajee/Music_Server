@@ -88,7 +88,8 @@ TEST_CASE("LocalScanner does not follow symlinked directories", "[sync][scanner]
 
 TEST_CASE("LocalScanner throws for a missing root directory", "[sync][scanner]") {
     const LocalScanner scanner;
-    CHECK_THROWS_AS(scanner.scan("/nonexistent/musicbox/root/that/should/not/exist"), std::runtime_error);
+    CHECK_THROWS_AS(scanner.scan("/nonexistent/musicbox/root/that/should/not/exist"),
+                    std::runtime_error);
 }
 
 TEST_CASE("LocalScanner returns an empty manifest for an empty directory", "[sync][scanner]") {

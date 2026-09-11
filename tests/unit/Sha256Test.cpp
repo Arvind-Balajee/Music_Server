@@ -33,8 +33,7 @@ TEST_CASE("sha256File matches sha256Bytes for the same content", "[util][sha256]
 }
 
 TEST_CASE("sha256File throws for a missing file", "[util][sha256]") {
-    CHECK_THROWS_AS(sha256File("/nonexistent/path/that/should/not/exist.bin"),
-                     std::runtime_error);
+    CHECK_THROWS_AS(sha256File("/nonexistent/path/that/should/not/exist.bin"), std::runtime_error);
 }
 
 TEST_CASE("sha256File matches sha256Bytes for an empty file", "[util][sha256]") {
@@ -72,7 +71,8 @@ TEST_CASE("sha256File matches sha256Bytes across the 64 KiB chunk boundary", "[u
     };
 
     {
-        auto [expected, actual] = writeAndHash("musicbox_sha256_test_chunk_minus1.tmp", chunkSize - 1);
+        auto [expected, actual] =
+            writeAndHash("musicbox_sha256_test_chunk_minus1.tmp", chunkSize - 1);
         CHECK(expected == actual);
     }
     {
@@ -80,13 +80,15 @@ TEST_CASE("sha256File matches sha256Bytes across the 64 KiB chunk boundary", "[u
         CHECK(expected == actual);
     }
     {
-        auto [expected, actual] = writeAndHash("musicbox_sha256_test_chunk_plus1.tmp", chunkSize + 1);
+        auto [expected, actual] =
+            writeAndHash("musicbox_sha256_test_chunk_plus1.tmp", chunkSize + 1);
         CHECK(expected == actual);
     }
     {
         // Two full chunks exactly - the read loop must correctly stop after
         // the second chunk instead of attempting a third empty read.
-        auto [expected, actual] = writeAndHash("musicbox_sha256_test_two_chunks.tmp", chunkSize * 2);
+        auto [expected, actual] =
+            writeAndHash("musicbox_sha256_test_two_chunks.tmp", chunkSize * 2);
         CHECK(expected == actual);
     }
 }

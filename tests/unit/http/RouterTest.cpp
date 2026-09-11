@@ -24,10 +24,11 @@ HttpRequest makeRequest(std::string method, std::string path) {
 TEST_CASE("Router matches a {name} path segment and passes it through RouteParams",
           "[http][router]") {
     auto router = createRouter();
-    router->addRoute("GET", "/api/v1/tracks/{id}", [](const HttpRequest&, const RouteParams& params) {
-        REQUIRE(params.contains("id"));
-        return HttpResponse::text(HttpStatus::Ok, "track " + params.at("id"));
-    });
+    router->addRoute("GET", "/api/v1/tracks/{id}",
+                     [](const HttpRequest&, const RouteParams& params) {
+                         REQUIRE(params.contains("id"));
+                         return HttpResponse::text(HttpStatus::Ok, "track " + params.at("id"));
+                     });
 
     auto response = router->dispatch(makeRequest("GET", "/api/v1/tracks/172"));
     CHECK(response.statusCode == HttpStatus::Ok);
@@ -36,11 +37,11 @@ TEST_CASE("Router matches a {name} path segment and passes it through RouteParam
 TEST_CASE("Router matches multiple named segments independently", "[http][router]") {
     auto router = createRouter();
     router->addRoute("DELETE", "/api/v1/playlists/{id}/tracks/{trackId}",
-                      [](const HttpRequest&, const RouteParams& params) {
-                          CHECK(params.at("id") == "5");
-                          CHECK(params.at("trackId") == "42");
-                          return HttpResponse::text(HttpStatus::Ok, "ok");
-                      });
+                     [](const HttpRequest&, const RouteParams& params) {
+                         CHECK(params.at("id") == "5");
+                         CHECK(params.at("trackId") == "42");
+                         return HttpResponse::text(HttpStatus::Ok, "ok");
+                     });
 
     auto response = router->dispatch(makeRequest("DELETE", "/api/v1/playlists/5/tracks/42"));
     CHECK(response.statusCode == HttpStatus::Ok);
@@ -81,9 +82,10 @@ TEST_CASE("Router distinguishes static segments from param segments", "[http][ro
     router->addRoute("GET", "/api/v1/tracks/count", [](const HttpRequest&, const RouteParams&) {
         return HttpResponse::text(HttpStatus::Ok, "count-route");
     });
-    router->addRoute("GET", "/api/v1/tracks/{id}", [](const HttpRequest&, const RouteParams& params) {
-        return HttpResponse::text(HttpStatus::Ok, "id-route:" + params.at("id"));
-    });
+    router->addRoute("GET", "/api/v1/tracks/{id}",
+                     [](const HttpRequest&, const RouteParams& params) {
+                         return HttpResponse::text(HttpStatus::Ok, "id-route:" + params.at("id"));
+                     });
 
     auto countResponse = router->dispatch(makeRequest("GET", "/api/v1/tracks/count"));
     CHECK(countResponse.statusCode == HttpStatus::Ok);
@@ -99,8 +101,8 @@ TEST_CASE("Router::addRoute throws on a duplicate (method, pattern) registration
         return HttpResponse::text(HttpStatus::Ok, "ok");
     });
     CHECK_THROWS_AS(router->addRoute("GET", "/x",
-                                      [](const HttpRequest&, const RouteParams&) {
-                                          return HttpResponse::text(HttpStatus::Ok, "ok");
-                                      }),
-                     std::logic_error);
+                                     [](const HttpRequest&, const RouteParams&) {
+                                         return HttpResponse::text(HttpStatus::Ok, "ok");
+                                     }),
+                    std::logic_error);
 }

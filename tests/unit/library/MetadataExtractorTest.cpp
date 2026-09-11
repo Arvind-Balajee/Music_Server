@@ -7,7 +7,8 @@
 using namespace musicbox::library;
 using musicbox::library::test::TempDirFixture;
 
-TEST_CASE("MetadataExtractor reads duration and codec from a real WAV file via TagLib", "[library][metadata]") {
+TEST_CASE("MetadataExtractor reads duration and codec from a real WAV file via TagLib",
+          "[library][metadata]") {
     TempDirFixture dir;
     const auto path = dir.writeMinimalWav("silence.wav", /*durationMs=*/1000);
 

@@ -46,9 +46,11 @@ int runPush(const std::string& localDir, const std::string& host) {
         std::cout << "push " << localDir << " -> " << host << "\n"
                   << "  new:       " << summary.newCount << "\n"
                   << "  modified:  " << summary.modifiedCount << "\n"
-                  << "  deleted:   " << summary.deletedCount << " (not removed from server; see docs/api.md)\n"
+                  << "  deleted:   " << summary.deletedCount
+                  << " (not removed from server; see docs/api.md)\n"
                   << "  unchanged: " << summary.unchangedCount << "\n"
-                  << "  uploaded:  " << summary.uploadedOk << " ok, " << summary.uploadFailed << " failed\n";
+                  << "  uploaded:  " << summary.uploadedOk << " ok, " << summary.uploadFailed
+                  << " failed\n";
         return summary.uploadFailed == 0 ? 0 : 1;
     } catch (const std::exception& e) {
         std::cerr << "push failed: " << e.what() << "\n";
@@ -60,7 +62,8 @@ int runStatus(const std::string& host) {
     musicbox::sync::HttpServerManifestSource manifestSource(host, kDefaultPort);
     try {
         const auto manifest = manifestSource.fetchManifest();
-        std::cout << "server " << host << ": reachable, " << manifest.size() << " tracks in manifest\n";
+        std::cout << "server " << host << ": reachable, " << manifest.size()
+                  << " tracks in manifest\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "server " << host << ": unreachable (" << e.what() << ")\n";
@@ -79,8 +82,10 @@ int runVerify(const std::string& localDir, const std::string& host) {
         std::cout << "verify " << localDir << " against " << host << "\n"
                   << "  unchanged: " << result.unchangedFiles.size() << "\n"
                   << "  new:       " << result.newFiles.size() << "\n"
-                  << "  modified:  " << result.modifiedFiles.size() << " (content differs from server)\n"
-                  << "  deleted:   " << result.deletedFiles.size() << " (present on server, missing locally)\n";
+                  << "  modified:  " << result.modifiedFiles.size()
+                  << " (content differs from server)\n"
+                  << "  deleted:   " << result.deletedFiles.size()
+                  << " (present on server, missing locally)\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "verify failed: " << e.what() << "\n";

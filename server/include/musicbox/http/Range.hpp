@@ -30,7 +30,6 @@ struct RangeParseResult {
 //
 // Only the single-range `bytes=` unit is supported; multi-range specs
 // (e.g. "bytes=0-99,200-299") are treated as NotSatisfiable (see docs/http.md).
-[[nodiscard]] RangeParseResult parseRange(std::string_view headerValue,
-                                           std::uint64_t resourceSize);
+[[nodiscard]] RangeParseResult parseRange(std::string_view headerValue, std::uint64_t resourceSize);
 
 } // namespace musicbox::http

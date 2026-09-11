@@ -26,12 +26,14 @@ bool rowExists(SqliteConnection& connection, const std::string& table, std::int6
 
 } // namespace
 
-SqlitePlaylistRepository::SqlitePlaylistRepository(const std::string& databasePath) : connection_(databasePath) {
+SqlitePlaylistRepository::SqlitePlaylistRepository(const std::string& databasePath)
+    : connection_(databasePath) {
     migrate(connection_);
 }
 
 std::optional<musicbox::Playlist> SqlitePlaylistRepository::findById(musicbox::PlaylistId id) {
-    SqliteStatement stmt(connection_, "SELECT id, name, created_at, updated_at FROM playlists WHERE id = ?;");
+    SqliteStatement stmt(connection_,
+                         "SELECT id, name, created_at, updated_at FROM playlists WHERE id = ?;");
     stmt.bindInt64(1, id.value());
     if (!stmt.step()) {
         return std::nullopt;
@@ -39,9 +41,11 @@ std::optional<musicbox::Playlist> SqlitePlaylistRepository::findById(musicbox::P
     return mapPlaylistRow(stmt);
 }
 
-std::vector<musicbox::Playlist> SqlitePlaylistRepository::list(std::size_t limit, std::size_t offset) {
-    SqliteStatement stmt(connection_,
-                          "SELECT id, name, created_at, updated_at FROM playlists ORDER BY id LIMIT ? OFFSET ?;");
+std::vector<musicbox::Playlist> SqlitePlaylistRepository::list(std::size_t limit,
+                                                               std::size_t offset) {
+    SqliteStatement stmt(
+        connection_,
+        "SELECT id, name, created_at, updated_at FROM playlists ORDER BY id LIMIT ? OFFSET ?;");
     stmt.bindInt64(1, static_cast<std::int64_t>(limit));
     stmt.bindInt64(2, static_cast<std::int64_t>(offset));
 
@@ -54,7 +58,8 @@ std::vector<musicbox::Playlist> SqlitePlaylistRepository::list(std::size_t limit
 
 musicbox::Playlist SqlitePlaylistRepository::create(std::string name) {
     const auto now = std::chrono::system_clock::now();
-    SqliteStatement insert(connection_, "INSERT INTO playlists(name, created_at, updated_at) VALUES(?, ?, ?);");
+    SqliteStatement insert(connection_,
+                           "INSERT INTO playlists(name, created_at, updated_at) VALUES(?, ?, ?);");
     insert.bindText(1, name);
     insert.bindInt64(2, toEpochMillis(now));
     insert.bindInt64(3, toEpochMillis(now));
@@ -69,7 +74,8 @@ musicbox::Playlist SqlitePlaylistRepository::create(std::string name) {
 }
 
 bool SqlitePlaylistRepository::rename(musicbox::PlaylistId id, std::string newName) {
-    SqliteStatement stmt(connection_, "UPDATE playlists SET name = ?, updated_at = ? WHERE id = ?;");
+    SqliteStatement stmt(connection_,
+                         "UPDATE playlists SET name = ?, updated_at = ? WHERE id = ?;");
     stmt.bindText(1, newName);
     stmt.bindInt64(2, toEpochMillis(std::chrono::system_clock::now()));
     stmt.bindInt64(3, id.value());
@@ -89,10 +95,10 @@ bool SqlitePlaylistRepository::remove(musicbox::PlaylistId id) {
 
 std::vector<musicbox::Track> SqlitePlaylistRepository::tracks(musicbox::PlaylistId id) {
     SqliteStatement stmt(connection_, std::string("SELECT ") + kTrackColumns +
-                                            " FROM tracks JOIN playlist_tracks "
-                                            "ON tracks.id = playlist_tracks.track_id "
-                                            "WHERE playlist_tracks.playlist_id = ? "
-                                            "ORDER BY playlist_tracks.position;");
+                                          " FROM tracks JOIN playlist_tracks "
+                                          "ON tracks.id = playlist_tracks.track_id "
+                                          "WHERE playlist_tracks.playlist_id = ? "
+                                          "ORDER BY playlist_tracks.position;");
     stmt.bindInt64(1, id.value());
 
     std::vector<musicbox::Track> results;
@@ -105,15 +111,16 @@ std::vector<musicbox::Track> SqlitePlaylistRepository::tracks(musicbox::Playlist
 bool SqlitePlaylistRepository::addTrack(musicbox::PlaylistId id, musicbox::TrackId trackId) {
     SqliteTransaction transaction(connection_);
 
-    if (!rowExists(connection_, "playlists", id.value()) || !rowExists(connection_, "tracks", trackId.value())) {
+    if (!rowExists(connection_, "playlists", id.value()) ||
+        !rowExists(connection_, "tracks", trackId.value())) {
         return false;
     }
 
     // Already a member -- treat as a no-op success rather than a duplicate
     // (playlist_tracks' primary key is (playlist_id, track_id), so a naive
     // INSERT would otherwise throw a constraint-violation exception here).
-    SqliteStatement existing(connection_,
-                              "SELECT 1 FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?;");
+    SqliteStatement existing(
+        connection_, "SELECT 1 FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?;");
     existing.bindInt64(1, id.value());
     existing.bindInt64(2, trackId.value());
     if (existing.step()) {
@@ -124,15 +131,17 @@ bool SqlitePlaylistRepository::addTrack(musicbox::PlaylistId id, musicbox::Track
         return true;
     }
 
-    SqliteStatement nextPosition(connection_,
-                                  "SELECT COALESCE(MAX(position) + 1, 0) FROM playlist_tracks WHERE playlist_id = ?;");
+    SqliteStatement nextPosition(
+        connection_,
+        "SELECT COALESCE(MAX(position) + 1, 0) FROM playlist_tracks WHERE playlist_id = ?;");
     nextPosition.bindInt64(1, id.value());
     nextPosition.step();
     const std::int64_t position = nextPosition.columnInt64(0);
     nextPosition.reset(); // same reason -- stays alive while insert/touch run below
 
-    SqliteStatement insert(connection_,
-                            "INSERT INTO playlist_tracks(playlist_id, track_id, position) VALUES(?, ?, ?);");
+    SqliteStatement insert(
+        connection_,
+        "INSERT INTO playlist_tracks(playlist_id, track_id, position) VALUES(?, ?, ?);");
     insert.bindInt64(1, id.value());
     insert.bindInt64(2, trackId.value());
     insert.bindInt64(3, position);
@@ -150,7 +159,8 @@ bool SqlitePlaylistRepository::addTrack(musicbox::PlaylistId id, musicbox::Track
 bool SqlitePlaylistRepository::removeTrack(musicbox::PlaylistId id, musicbox::TrackId trackId) {
     SqliteTransaction transaction(connection_);
 
-    SqliteStatement stmt(connection_, "DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?;");
+    SqliteStatement stmt(connection_,
+                         "DELETE FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?;");
     stmt.bindInt64(1, id.value());
     stmt.bindInt64(2, trackId.value());
     stmt.run();

@@ -18,12 +18,13 @@ namespace fs = std::filesystem;
 std::string toLowerExtension(const fs::path& path) {
     std::string ext = path.extension().string();
     std::transform(ext.begin(), ext.end(), ext.begin(),
-                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return ext;
 }
 
 bool isSupportedExtension(const std::string& lowerExt) {
-    static const std::unordered_set<std::string> kSupported = {".mp3", ".flac", ".m4a", ".aac", ".wav"};
+    static const std::unordered_set<std::string> kSupported = {".mp3", ".flac", ".m4a", ".aac",
+                                                               ".wav"};
     return kSupported.count(lowerExt) != 0;
 }
 
@@ -39,7 +40,8 @@ std::chrono::system_clock::time_point toSystemClock(fs::file_time_type fileTime)
 
 class DefaultLibraryScanner : public LibraryScanner {
 public:
-    DefaultLibraryScanner(musicbox::db::TrackRepository& trackRepository, MetadataExtractor& metadataExtractor)
+    DefaultLibraryScanner(musicbox::db::TrackRepository& trackRepository,
+                          MetadataExtractor& metadataExtractor)
         : trackRepository_(trackRepository), metadataExtractor_(metadataExtractor) {}
 
     ScanResult scan(const musicbox::LibraryRoot& root) override {
@@ -48,7 +50,8 @@ public:
 
         const fs::path rootPath(root.absolutePath);
         std::error_code walkError;
-        fs::recursive_directory_iterator it(rootPath, fs::directory_options::skip_permission_denied, walkError);
+        fs::recursive_directory_iterator it(rootPath, fs::directory_options::skip_permission_denied,
+                                            walkError);
         const fs::recursive_directory_iterator end;
 
         for (; it != end && !walkError; it.increment(walkError)) {
@@ -80,8 +83,8 @@ public:
         }
 
         if (walkError) {
-            std::cerr << "LibraryScanner: error walking " << root.absolutePath << ": " << walkError.message()
-                       << '\n';
+            std::cerr << "LibraryScanner: error walking " << root.absolutePath << ": "
+                      << walkError.message() << '\n';
         }
 
         detectDeletions(root, seenRelativePaths, result);
@@ -90,7 +93,7 @@ public:
 
 private:
     void processFile(const musicbox::LibraryRoot& root, const fs::directory_entry& entry,
-                      const std::string& relativePath, ScanResult& result) {
+                     const std::string& relativePath, ScanResult& result) {
         std::error_code sizeError;
         const std::uint64_t fileSize = entry.file_size(sizeError);
         std::error_code mtimeError;
@@ -101,7 +104,8 @@ private:
         }
         const auto modifiedAt = toSystemClock(mtime);
 
-        std::optional<musicbox::Track> existing = trackRepository_.findByPath(root.id, relativePath);
+        std::optional<musicbox::Track> existing =
+            trackRepository_.findByPath(root.id, relativePath);
 
         if (!existing.has_value()) {
             insertNew(root, entry, relativePath, fileSize, modifiedAt, result);
@@ -131,8 +135,8 @@ private:
         const auto toMillis = [](std::chrono::system_clock::time_point tp) {
             return std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
         };
-        const bool possiblyChanged =
-            fileSize != existing->fileSizeBytes || toMillis(modifiedAt) != toMillis(existing->modifiedAt);
+        const bool possiblyChanged = fileSize != existing->fileSizeBytes ||
+                                     toMillis(modifiedAt) != toMillis(existing->modifiedAt);
         if (!possiblyChanged) {
             result.unchanged++;
             return;
@@ -145,7 +149,8 @@ private:
         try {
             hash = musicbox::util::sha256File(entry.path().string());
         } catch (const std::exception& e) {
-            std::cerr << "LibraryScanner: failed to hash " << entry.path() << ": " << e.what() << '\n';
+            std::cerr << "LibraryScanner: failed to hash " << entry.path() << ": " << e.what()
+                      << '\n';
             result.skippedUnreadable++;
             return;
         }
@@ -179,8 +184,8 @@ private:
     }
 
     void insertNew(const musicbox::LibraryRoot& root, const fs::directory_entry& entry,
-                    const std::string& relativePath, std::uint64_t fileSize,
-                    std::chrono::system_clock::time_point modifiedAt, ScanResult& result) {
+                   const std::string& relativePath, std::uint64_t fileSize,
+                   std::chrono::system_clock::time_point modifiedAt, ScanResult& result) {
         auto metadata = metadataExtractor_.extract(entry.path().string());
         if (!metadata.has_value()) {
             result.skippedUnreadable++;
@@ -191,7 +196,8 @@ private:
         try {
             hash = musicbox::util::sha256File(entry.path().string());
         } catch (const std::exception& e) {
-            std::cerr << "LibraryScanner: failed to hash " << entry.path() << ": " << e.what() << '\n';
+            std::cerr << "LibraryScanner: failed to hash " << entry.path() << ": " << e.what()
+                      << '\n';
             result.skippedUnreadable++;
             return;
         }
@@ -201,10 +207,10 @@ private:
         result.inserted++;
     }
 
-    static musicbox::db::TrackUpsert toUpsert(const RawTrackMetadata& metadata, musicbox::LibraryRootId rootId,
-                                                const std::string& relativePath, std::uint64_t fileSize,
-                                                std::chrono::system_clock::time_point modifiedAt,
-                                                const std::string& contentHash) {
+    static musicbox::db::TrackUpsert
+    toUpsert(const RawTrackMetadata& metadata, musicbox::LibraryRootId rootId,
+             const std::string& relativePath, std::uint64_t fileSize,
+             std::chrono::system_clock::time_point modifiedAt, const std::string& contentHash) {
         musicbox::db::TrackUpsert data;
         data.libraryRootId = rootId;
         data.relativePath = relativePath;
@@ -226,8 +232,9 @@ private:
         return data;
     }
 
-    void detectDeletions(const musicbox::LibraryRoot& root, const std::unordered_set<std::string>& seenRelativePaths,
-                          ScanResult& result) {
+    void detectDeletions(const musicbox::LibraryRoot& root,
+                         const std::unordered_set<std::string>& seenRelativePaths,
+                         ScanResult& result) {
         const auto now = std::chrono::system_clock::now();
         for (const musicbox::Track& track : trackRepository_.listByLibraryRoot(root.id)) {
             if (track.deletedAt.has_value()) {
@@ -249,7 +256,7 @@ private:
 } // namespace
 
 std::unique_ptr<LibraryScanner> makeLibraryScanner(musicbox::db::TrackRepository& trackRepository,
-                                                     MetadataExtractor& metadataExtractor) {
+                                                   MetadataExtractor& metadataExtractor) {
     return std::make_unique<DefaultLibraryScanner>(trackRepository, metadataExtractor);
 }
 

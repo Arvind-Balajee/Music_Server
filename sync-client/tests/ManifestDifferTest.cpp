@@ -29,7 +29,8 @@ public:
         calledPaths_.push_back(absolutePath);
         for (const auto& [suffix, hash] : scripts_) {
             if (absolutePath.size() >= suffix.size() &&
-                absolutePath.compare(absolutePath.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                absolutePath.compare(absolutePath.size() - suffix.size(), suffix.size(), suffix) ==
+                    0) {
                 return hash;
             }
         }
@@ -37,7 +38,9 @@ public:
     }
 
     [[nodiscard]] int callCount() const noexcept { return callCount_; }
-    [[nodiscard]] const std::vector<std::string>& calledPaths() const noexcept { return calledPaths_; }
+    [[nodiscard]] const std::vector<std::string>& calledPaths() const noexcept {
+        return calledPaths_;
+    }
 
 private:
     std::map<std::string, std::string> scripts_;
@@ -62,15 +65,15 @@ TEST_CASE("ManifestDiffer classifies new/modified/deleted/unchanged correctly", 
     };
 
     const std::vector<LocalFileEntry> local = {
-        {"unchanged.mp3", 1000, kBaseTime},                 // exact size+mtime match
+        {"unchanged.mp3", 1000, kBaseTime},                  // exact size+mtime match
         {"touched_same_content.mp3", 2000, kBaseTime + 60s}, // mtime differs, content doesn't
         {"modified.mp3", 3500, kBaseTime},                   // size differs, content differs
         {"new.mp3", 500, kBaseTime},                         // not present on server at all
     };
 
     ScriptedCountingHasher hasher;
-    hasher.script("touched_same_content.mp3", "hash-touched");     // matches server -> unchanged
-    hasher.script("modified.mp3", "hash-new-modified");            // differs from server -> modified
+    hasher.script("touched_same_content.mp3", "hash-touched"); // matches server -> unchanged
+    hasher.script("modified.mp3", "hash-new-modified");        // differs from server -> modified
 
     const ManifestDiffer differ;
     const DiffResult result = differ.diff(local, server, "/music", hasher);
@@ -93,7 +96,8 @@ TEST_CASE("ManifestDiffer classifies new/modified/deleted/unchanged correctly", 
     CHECK(result.totalFiles() == local.size() + 1);
 }
 
-TEST_CASE("ManifestDiffer skips hashing files the size+mtime pre-check already proves unchanged", "[sync][diff]") {
+TEST_CASE("ManifestDiffer skips hashing files the size+mtime pre-check already proves unchanged",
+          "[sync][diff]") {
     const std::vector<ServerManifestEntry> server = {
         {"a.mp3", 100, kBaseTime, "hash-a"},
         {"b.mp3", 200, kBaseTime, "hash-b"},
@@ -111,7 +115,8 @@ TEST_CASE("ManifestDiffer skips hashing files the size+mtime pre-check already p
     CHECK(result.unchangedFiles.size() == 2);
 }
 
-TEST_CASE("ManifestDiffer hashes only files whose size or mtime differs from the server", "[sync][diff]") {
+TEST_CASE("ManifestDiffer hashes only files whose size or mtime differs from the server",
+          "[sync][diff]") {
     const std::vector<ServerManifestEntry> server = {
         {"same.mp3", 100, kBaseTime, "hash-same"},
         {"size-differs.mp3", 100, kBaseTime, "hash-x"},
@@ -152,7 +157,8 @@ TEST_CASE("ManifestDiffer never hashes brand-new files", "[sync][diff]") {
     CHECK(result.newFiles.size() == 2);
 }
 
-TEST_CASE("ManifestDiffer forceHash re-hashes everything even when metadata matches", "[sync][diff]") {
+TEST_CASE("ManifestDiffer forceHash re-hashes everything even when metadata matches",
+          "[sync][diff]") {
     const std::vector<ServerManifestEntry> server = {
         {"a.mp3", 100, kBaseTime, "hash-a"},
     };
@@ -170,7 +176,8 @@ TEST_CASE("ManifestDiffer forceHash re-hashes everything even when metadata matc
     CHECK(result.modifiedFiles.size() == 1); // hash mismatch detected despite matching size+mtime
 }
 
-TEST_CASE("ManifestDiffer with an empty local manifest reports everything as deleted", "[sync][diff]") {
+TEST_CASE("ManifestDiffer with an empty local manifest reports everything as deleted",
+          "[sync][diff]") {
     const std::vector<ServerManifestEntry> server = {
         {"a.mp3", 100, kBaseTime, "hash-a"},
         {"b.mp3", 200, kBaseTime, "hash-b"},
@@ -185,7 +192,8 @@ TEST_CASE("ManifestDiffer with an empty local manifest reports everything as del
     CHECK(hasher.callCount() == 0);
 }
 
-TEST_CASE("ManifestDiffer with an empty server manifest reports everything as new", "[sync][diff]") {
+TEST_CASE("ManifestDiffer with an empty server manifest reports everything as new",
+          "[sync][diff]") {
     const std::vector<ServerManifestEntry> server = {};
     const std::vector<LocalFileEntry> local = {
         {"a.mp3", 100, kBaseTime},
