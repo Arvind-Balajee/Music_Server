@@ -53,6 +53,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Pinned to an exact version rather than the runner's preinstalled
+      # clang-format: formatting rules for some constructs (e.g. brace-init
+      # `struct stat st{};`, empty compound statements) differ between
+      # clang-format releases even with an identical .clang-format config,
+      # which previously caused CI to flag lines that a locally up-to-date
+      # clang-format considered already compliant.
+      - name: Install pinned clang-format
+        run: pip install --quiet clang-format==23.1.1
+
       - name: clang-format check
         run: |
           FILES=$(find server shared tests -name '*.cpp' -o -name '*.hpp' 2>/dev/null || true)
