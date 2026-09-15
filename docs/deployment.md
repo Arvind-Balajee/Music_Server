@@ -4,17 +4,19 @@ Owner: Agent 7 (Deployment). See `Plan.md` §13-14 for requirements
 (`musicbox.service`, Wi-Fi AP at `192.168.50.1`, offline operation, mDNS at
 `musicbox.local`).
 
-Status: deployment tooling complete (systemd unit, Wi-Fi AP config for both
-the legacy dhcpcd stack and current NetworkManager/Bookworm stack, dnsmasq
-DHCP config, Avahi mDNS service definition, an idempotent installer, and a
-step-by-step manual walkthrough). **Not validated on real Raspberry Pi
-hardware** — no device was available in the environment this was produced
-in; see "Known limitations" below and `deployment/README.md` §9.
+Status: deployment tooling complete (systemd unit, Wi-Fi AP config for the
+legacy dhcpcd stack, current NetworkManager/Bookworm stack, and Ubuntu
+Server's netplan/networkd stack, dnsmasq DHCP config, Avahi mDNS service
+definition, an idempotent installer, and a step-by-step manual walkthrough).
+**Not validated on real Raspberry Pi hardware** — no device was available in
+the environment this was produced in; see "Known limitations" below and
+`deployment/README.md` §9.
 
-Also blocked on: `musicbox-server run` (Agents 1/3/4) not being implemented
-yet — see "Integration dependencies" below. The deployment plumbing targets
-the CLI/config contract those agents are building toward, but hasn't been
-exercised against a working server.
+Also blocked on: Agent 4's REST API layer not being implemented yet — see
+"Integration dependencies" below. `run` itself works (starts the real event
+loop) but only serves a fixed temporary demo response, not real endpoints;
+the deployment plumbing targets the CLI/config contract Agent 4 is building
+toward, but hasn't been exercised against a working API.
 
 For the actual step-by-step instructions (build, install, verify AP,
 verify mDNS, check service health), see **`deployment/README.md`** — this
@@ -27,10 +29,11 @@ deployment/
 ├── config/musicbox.toml           deployment-target default server config
 ├── systemd/musicbox.service       systemd unit (hardened, runs as `musicbox` user)
 ├── networking/
-│   ├── hostapd.conf                Wi-Fi AP (SSID MusicBox, WPA2-PSK) — legacy/dhcpcd path
+│   ├── hostapd.conf                Wi-Fi AP (SSID MusicBox, WPA2-PSK) — dhcpcd and netplan paths
 │   ├── dnsmasq.conf                DHCP for AP clients (192.168.50.10+)
 │   ├── dhcpcd.conf.append          static 192.168.50.1 on wlan0 — Raspberry Pi OS Bullseye and earlier
 │   ├── nm-musicbox-ap.nmconnection static AP + IP via NetworkManager — Raspberry Pi OS Bookworm+ (default path there)
+│   ├── netplan-musicbox-ap.yaml    static 192.168.50.1 on wlan0 via netplan — Ubuntu Server on the Pi
 │   ├── musicbox-unmanaged.conf     NetworkManager drop-in, only for the "keep hostapd on Bookworm" alternative
 │   ├── musicbox-ap-address.service companion static-IP unit for that alternative
 │   └── musicbox.service            Avahi service definition -> musicbox.local (note: same filename as the systemd unit above, different tool/directory — see deployment/README.md §0)
@@ -48,15 +51,19 @@ deployment/
   AF_INET6 AF_UNIX`, no raw sockets) without any tradeoff against AP
   functionality — the server only ever needs a plain unprivileged TCP
   listen socket and read/write access to its own config/data directories.
-* **Two supported paths for the AP layer**, auto-detected by `install.sh`:
+* **Three supported paths for the AP layer**, auto-detected by `install.sh`
+  (`nmcli`+NetworkManager, then `dhcpcd`, then `netplan`, in that order):
   classic `hostapd` + `dnsmasq` + a static-IP stanza in `/etc/dhcpcd.conf`
-  (Raspberry Pi OS "Bullseye" and earlier), or a native NetworkManager
-  AP connection profile with a manual static IP (Raspberry Pi OS
-  "Bookworm"+, where `dhcpcd` isn't installed and NetworkManager owns
-  `wlan0` by default). Both hand DHCP duty to the same `dnsmasq.conf`. A
-  third option (keep hostapd even on Bookworm, by marking `wlan0`
-  "unmanaged" in NetworkManager) is provided for anyone who'd rather not
-  depend on NetworkManager's AP support; see `deployment/README.md`.
+  (Raspberry Pi OS "Bullseye" and earlier); a native NetworkManager AP
+  connection profile with a manual static IP (Raspberry Pi OS "Bookworm"+,
+  where `dhcpcd` isn't installed and NetworkManager owns `wlan0` by
+  default); or `hostapd` + `dnsmasq` + a static-IP netplan config for
+  `wlan0` (**Ubuntu Server on the Pi**, whose default stack is netplan +
+  systemd-networkd — neither NetworkManager nor dhcpcd). All three hand DHCP
+  duty to the same `dnsmasq.conf`. A fourth option (keep hostapd even on
+  Bookworm, by marking `wlan0` "unmanaged" in NetworkManager) is provided
+  for anyone who'd rather not depend on NetworkManager's AP support; see
+  `deployment/README.md`.
 * **2.4 GHz / channel 7 by default**, not 5 GHz, because the Raspberry Pi
   Zero 2 W's onboard radio is 2.4 GHz-only; Pi 4/5 deployments that don't
   need Zero 2 W compatibility can switch `hostapd.conf`/the NM profile to
@@ -119,9 +126,10 @@ refreshing opportunistically rather than only on failure. See
 
 For this deployment tooling to do anything useful end-to-end, it needs:
 
-1. `musicbox-server run --config <path>` to actually start the event loop +
-   HTTP API (currently a placeholder in `server/src/main.cpp` — Agents
-   1/2/3/4's milestones 1-6).
+1. `musicbox-server run --config <path>` to serve the real `/api/v1/*` API
+   (the event loop itself already runs — see `server/src/main.cpp`'s
+   "TEMPORARY Milestone-1 demo wiring" — Agent 4's API layer is what's
+   missing).
 2. The config loader (`musicbox::config::loadConfigFile`, already declared
    in `server/include/musicbox/config/Config.hpp`) to be implemented and
    wired into `run`, since the systemd unit's only contract with the binary
@@ -145,12 +153,18 @@ For this deployment tooling to do anything useful end-to-end, it needs:
   directory; it was not run end-to-end as root against a real filesystem
   (no disposable Linux box in this environment either — this was authored
   on macOS).
-* `hostapd`, `dnsmasq`, `nmcli`, and `avahi-daemon` were not installed in
-  this environment, so their config files were reviewed by hand against
-  upstream man-page documentation rather than validated with e.g.
-  `hostapd -t hostapd.conf`. Recommend running that (and `dnsmasq --test
-  --conf-file=...`) on an actual Debian/Raspberry Pi OS box, or in a Docker
-  container with the packages installed, before first real deployment.
+* `hostapd`, `dnsmasq`, `nmcli`, `netplan`, and `avahi-daemon` were not
+  installed in this environment, so their config files were reviewed by hand
+  against upstream man-page documentation rather than validated with e.g.
+  `hostapd -t hostapd.conf` or `netplan generate`. Recommend running those
+  (and `dnsmasq --test --conf-file=...`) on an actual Debian/Raspberry Pi OS
+  or Ubuntu box, or in a Docker container with the packages installed,
+  before first real deployment.
+* The netplan path is newer and less battle-tested than the other two — it
+  hasn't been checked against a real cloud-init-provisioned Ubuntu Server
+  image, which may ship its own `wlan0` netplan config that conflicts with
+  ours (see the comment in `netplan-musicbox-ap.yaml` and
+  `deployment/README.md` §9).
 * Single-radio dual-mode (home Wi-Fi client for sync, then AP mode for the
   car) is a manual toggle, not automated — see `deployment/README.md` §9.
 

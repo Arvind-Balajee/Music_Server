@@ -1,0 +1,43 @@
+# netplan static-IP config for the MusicBox AP interface — Ubuntu Server (and
+# any other distro whose default network stack is netplan + systemd-networkd,
+# with neither NetworkManager nor dhcpcd active). Raspberry Pi OS ships
+# dhcpcd.conf.append (Bullseye) or nm-musicbox-ap.nmconnection (Bookworm+)
+# instead; this file exists specifically for running Ubuntu on the Pi.
+#
+# Installed to: /etc/netplan/90-musicbox-ap.yaml (install.sh does this; see
+# deployment/install.sh's install_ap_netplan()).
+#
+# Why `ethernets:` for a Wi-Fi device: netplan's `wifis:` stanza configures
+# *client* (station-mode) Wi-Fi via wpa_supplicant/NetworkManager — it has no
+# concept of AP mode under the networkd renderer. hostapd is what actually
+# puts wlan0 into AP mode (same as on Raspberry Pi OS's dhcpcd path); this
+# file's only job is to give wlan0 a static IPv4 address once hostapd has
+# claimed it, exactly like dhcpcd.conf.append does for Bullseye. Matching
+# wlan0 under `ethernets:` sidesteps netplan validating/templating it as a
+# wifi client and just gets a plain static-address config applied by
+# systemd-networkd. This is a documented community pattern for
+# hostapd + netplan, not an official netplan feature.
+#
+# DHCP is intentionally off on this interface — wlan0 IS the AP, not a DHCP
+# client; DHCP for connecting phones/laptops is served separately by our own
+# dnsmasq (see dnsmasq.conf), not by netplan/networkd.
+#
+# If your image already has another netplan file governing wlan0 (e.g. a
+# cloud-init-generated default that tries to associate it as a Wi-Fi client),
+# remove or disable that file first — netplan merges all files under
+# /etc/netplan/, and having both an AP-mode static config and a client-mode
+# `wifis:` entry for the same interface will conflict. This repo's installer
+# does not attempt to detect or remove such a file for you.
+#
+# NOT tested on real hardware (no Pi available in this environment). Reviewed
+# against `man netplan`, `netplan(5)`, and `systemd.network(5)`, not run
+# through `netplan generate`/`netplan try` (not installed here).
+
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    wlan0:
+      dhcp4: no
+      dhcp6: no
+      addresses: [192.168.50.1/24]

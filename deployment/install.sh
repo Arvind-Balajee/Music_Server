@@ -4,8 +4,11 @@
 #
 # Installs the musicbox-server binary + config as a systemd service running
 # under a dedicated unprivileged "musicbox" user, and — only with --with-ap —
-# the Wi-Fi access point (hostapd/dnsmasq or NetworkManager) and mDNS
-# (avahi) configuration described in deployment/README.md.
+# the Wi-Fi access point (hostapd/dnsmasq, driven by whichever of
+# NetworkManager, dhcpcd, or netplan is active) and mDNS (avahi) configuration
+# described in deployment/README.md. Works on Raspberry Pi OS (all three
+# network stacks it has shipped) and on Ubuntu Server on the Pi (netplan +
+# systemd-networkd).
 #
 # Safe to re-run: every step below either checks before writing or overwrites
 # only files this repo owns outright (see the "Overwrite policy" comment
@@ -18,8 +21,8 @@
 #   sudo ./install.sh [options]
 #
 # Options:
-#   --with-ap             Also install & enable the Wi-Fi AP (hostapd/
-#                          dnsmasq or NetworkManager, auto-detected) and
+#   --with-ap             Also install & enable the Wi-Fi AP (hostapd/dnsmasq,
+#                          NetworkManager, or netplan — auto-detected) and
 #                          avahi mDNS. Default: off — many installs join an
 #                          existing home LAN instead of running their own AP.
 #   --binary PATH          Path to the built musicbox-server executable.
@@ -375,6 +378,44 @@ install_ap_hostapd_dhcpcd() {
     fi
 }
 
+install_ap_netplan() {
+    log "netplan detected (no NetworkManager/dhcpcd active): installing hostapd + dnsmasq + netplan static-IP config"
+    log "this path is for Ubuntu Server on the Pi (or any netplan+networkd system) — see deployment/README.md"
+
+    install -d -m 755 /etc/hostapd
+    local hostapd_dst="/etc/hostapd/hostapd.conf"
+    if [[ -f "$hostapd_dst" && $KEEP_EXISTING_AP_CONFIG -eq 1 ]]; then
+        log "$hostapd_dst already exists, leaving it untouched (--keep-existing-ap-config)"
+    else
+        substitute_passphrase "$SCRIPT_DIR/networking/hostapd.conf" "$hostapd_dst"
+        log "installed $hostapd_dst"
+    fi
+
+    if [[ -f /etc/default/hostapd ]] && ! grep -q '^DAEMON_CONF="/etc/hostapd/hostapd.conf"' /etc/default/hostapd; then
+        sed -i 's|^#\?DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
+        log "pointed /etc/default/hostapd at /etc/hostapd/hostapd.conf"
+    fi
+
+    install -d -m 755 /etc/netplan
+    local netplan_dst="/etc/netplan/90-musicbox-ap.yaml"
+    if [[ -f "$netplan_dst" && $KEEP_EXISTING_AP_CONFIG -eq 1 ]]; then
+        log "$netplan_dst already exists, leaving it untouched (--keep-existing-ap-config)"
+    else
+        cp "$SCRIPT_DIR/networking/netplan-musicbox-ap.yaml" "$netplan_dst"
+        chmod 600 "$netplan_dst"
+        log "installed $netplan_dst"
+    fi
+
+    install_dnsmasq
+
+    if [[ $SKIP_ENABLE -eq 0 ]]; then
+        systemctl unmask hostapd.service 2>/dev/null || true
+        systemctl enable hostapd.service
+        netplan apply || warn "netplan apply failed; check 'netplan generate' output and reboot to retry"
+        systemctl restart hostapd.service || warn "failed to restart hostapd; check 'journalctl -u hostapd'"
+    fi
+}
+
 install_ap_hostapd_unmanaged_nm() {
     log "NetworkManager detected but --keep-hostapd-on-bookworm requested: marking wlan0 unmanaged"
     install -d -m 755 /etc/NetworkManager/conf.d
@@ -454,8 +495,10 @@ install_ap() {
         fi
     elif command -v dhcpcd >/dev/null 2>&1 || service_active_or_installed dhcpcd.service; then
         install_ap_hostapd_dhcpcd
+    elif command -v netplan >/dev/null 2>&1; then
+        install_ap_netplan
     else
-        warn "could not detect NetworkManager or dhcpcd — skipping AP network setup."
+        warn "could not detect NetworkManager, dhcpcd, or netplan — skipping AP network setup."
         warn "Install hostapd+dnsmasq (or NetworkManager) manually; see deployment/README.md."
     fi
     install_avahi

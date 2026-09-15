@@ -14,9 +14,12 @@ style validation). Treat first boot on a real device as a test, and read
 through each file's comments before you `install.sh --with-ap` something you
 depend on.
 
-Targets: Raspberry Pi Zero 2 W, Pi 4, Pi 5, running Raspberry Pi OS
-(Debian-based, 32- or 64-bit). Differences between boards are called out
-inline (mainly: the Zero 2 W's Wi-Fi radio is 2.4 GHz-only).
+Targets: Raspberry Pi Zero 2 W, Pi 4, Pi 5, running either Raspberry Pi OS
+(Debian-based, 32- or 64-bit) or Ubuntu Server (22.04+/24.04+, arm64) —
+`install.sh --with-ap` auto-detects which of NetworkManager, dhcpcd, or
+netplan is your active network stack and installs the matching AP config
+(see §0's table). Differences between boards are called out inline (mainly:
+the Zero 2 W's Wi-Fi radio is 2.4 GHz-only).
 
 ---
 
@@ -29,10 +32,11 @@ inline (mainly: the Zero 2 W's Wi-Fi radio is 2.4 GHz-only).
 | systemd unit | `deployment/systemd/musicbox.service` | `/etc/systemd/system/musicbox.service` |
 | SQLite DB / state | — | `/var/lib/musicbox/` |
 | Music library | — (you provide the files) | `/media/musicbox/music/` (default; `--library-path` to change) |
-| hostapd config (legacy/Bullseye path) | `deployment/networking/hostapd.conf` | `/etc/hostapd/hostapd.conf` |
+| hostapd config (dhcpcd- and netplan-based paths) | `deployment/networking/hostapd.conf` | `/etc/hostapd/hostapd.conf` |
 | dnsmasq config | `deployment/networking/dnsmasq.conf` | `/etc/dnsmasq.d/musicbox.conf` |
-| Static IP, dhcpcd (Bullseye and earlier) | `deployment/networking/dhcpcd.conf.append` | appended into `/etc/dhcpcd.conf` |
-| Static IP / AP, NetworkManager (Bookworm+) | `deployment/networking/nm-musicbox-ap.nmconnection` | `/etc/NetworkManager/system-connections/musicbox-ap.nmconnection` |
+| Static IP, dhcpcd (Raspberry Pi OS Bullseye and earlier) | `deployment/networking/dhcpcd.conf.append` | appended into `/etc/dhcpcd.conf` |
+| Static IP / AP, NetworkManager (Raspberry Pi OS Bookworm+) | `deployment/networking/nm-musicbox-ap.nmconnection` | `/etc/NetworkManager/system-connections/musicbox-ap.nmconnection` |
+| Static IP, netplan (**Ubuntu Server on the Pi**) | `deployment/networking/netplan-musicbox-ap.yaml` | `/etc/netplan/90-musicbox-ap.yaml` |
 | mDNS service record | `deployment/networking/musicbox.service` | `/etc/avahi/services/musicbox.service` |
 
 All of this is applied by `deployment/install.sh` — see §2 below. You
@@ -63,11 +67,14 @@ elsewhere (e.g. cross-compiling on a dev machine and copying the binary over
 to the Pi separately — this repo does not include cross-compilation tooling,
 see §9 "Recommended next tasks").
 
-As of this writing, `musicbox-server run` itself is a **placeholder** (see
-`server/src/main.cpp`) — it prints "not implemented yet" and exits non-zero.
-The deployment tooling in this directory (systemd unit, AP config, install
-script) is complete and installable today, but the service will not
-actually serve traffic until Agents 1/3/4's pieces land. See
+As of this writing, `musicbox-server run` starts the real epoll/kqueue event
+loop and listens on port 8080, but answers every request with a fixed
+`MusicBox` response (see the "TEMPORARY Milestone-1 demo wiring" comment in
+`server/src/main.cpp`) — there is no real `/api/v1/*` API behind it yet
+(Agent 4 hasn't landed). The deployment tooling in this directory (systemd
+unit, AP config, install script) is complete and installable today, and you
+can verify the service actually starts and responds; it will not serve real
+music/library data until Agent 4's API layer lands. See
 `docs/deployment.md` → "Integration dependencies" for exactly what's needed.
 
 ## 2. Copy this repo (or just `deployment/` + the binary) to the Pi
@@ -143,13 +150,12 @@ sudo systemctl status musicbox
 ```
 
 `install.sh` deliberately does **not** `systemctl start` the service for
-you (only `enable`s it) — see §1 above on why `run` isn't implemented yet.
-Once it is, starting it automatically on install is the obvious next step
-(see `docs/deployment.md`).
+you (only `enable`s it) — see §1 above on `run` currently only serving a
+fixed demo response, not the real API. Auto-starting on install is the
+obvious next step once Agent 4's API layer lands (see `docs/deployment.md`).
 
-`systemctl status musicbox` should show `active (running)` (once `run` is
-implemented) with `User=musicbox` and no restart-loop counter climbing.
-Follow logs with:
+`systemctl status musicbox` should show `active (running)` with
+`User=musicbox` and no restart-loop counter climbing. Follow logs with:
 
 ```bash
 journalctl -u musicbox -f
@@ -162,7 +168,8 @@ On the Pi:
 ```bash
 # Which path got used?
 nmcli connection show musicbox-ap 2>/dev/null && echo "NetworkManager AP path"
-systemctl is-active hostapd 2>/dev/null && echo "hostapd path"
+systemctl is-active hostapd 2>/dev/null && echo "hostapd path (dhcpcd or netplan)"
+ls /etc/netplan/90-musicbox-ap.yaml 2>/dev/null && echo "  ...specifically the netplan path (Ubuntu)"
 
 ip addr show wlan0     # should show 192.168.50.1/24
 ```
@@ -239,9 +246,10 @@ against; it does not implement the client side.
 
 * Re-run `install.sh` any time (see "safe to re-run" in §3).
 * To fully remove the AP setup: `systemctl disable --now hostapd dnsmasq`
-  (hostapd path) or `nmcli connection delete musicbox-ap` (NetworkManager
-  path), then remove the corresponding files listed in §0's table and
-  `systemctl daemon-reload`.
+  (dhcpcd or netplan path — on the netplan path also `rm
+  /etc/netplan/90-musicbox-ap.yaml && netplan apply`) or `nmcli connection
+  delete musicbox-ap` (NetworkManager path), then remove the corresponding
+  files listed in §0's table and `systemctl daemon-reload`.
 * To stop musicbox-server entirely: `systemctl disable --now musicbox`.
   Nothing in this repo deletes `/var/lib/musicbox` (your database) or your
   music library automatically — remove those by hand if you actually want
@@ -256,9 +264,22 @@ against; it does not implement the client side.
   too aggressive for some future feature (e.g. if `musicbox-server`
   eventually wants to write anywhere other than `/var/lib/musicbox`) are all
   things a real device will surface that a read-through cannot.
-* `musicbox-server run`/`scan`/`status`/`doctor` are not implemented yet
-  (see §1) — the deployment plumbing is ready for them, not validated
-  against a running server.
+* `run` serves only the temporary fixed demo response (see §1); `scan`,
+  `status`, and `doctor` are not implemented yet — the deployment plumbing is
+  ready for the real API, not validated against one yet.
+* **netplan path untested against a real image.** The dhcpcd and
+  NetworkManager paths at least mirror upstream Raspberry Pi OS's own
+  defaults; the netplan path (`install_ap_netplan()`,
+  `deployment/networking/netplan-musicbox-ap.yaml`) was written for a
+  cloud-image Ubuntu Server install and reviewed against `netplan(5)`/
+  `systemd.network(5)`, but not run through `netplan generate`/`netplan try`
+  (not installed in this environment) or booted on a real device. In
+  particular: if the base Ubuntu image's own cloud-init-generated netplan
+  config already tries to manage `wlan0` as a Wi-Fi client, it will conflict
+  with this file (see the comment at the top of
+  `netplan-musicbox-ap.yaml`) — inspect `/etc/netplan/*.yaml` first and
+  remove/disable any pre-existing `wlan0` client config before
+  `install.sh --with-ap`.
 * Dual NIC/dual-mode operation ("join home Wi-Fi to sync, then switch to AP
   mode for the car") is not automated. If your Pi has only one Wi-Fi radio,
   you have two real options: (a) always run in AP mode and do library sync
