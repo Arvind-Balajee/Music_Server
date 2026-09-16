@@ -11,6 +11,15 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Appearance") {
+                Picker("Appearance", selection: $settings.appearanceMode) {
+                    ForEach(AppearanceMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
             Section {
                 Toggle("Use Mock Data", isOn: $settings.useMockData)
             } footer: {

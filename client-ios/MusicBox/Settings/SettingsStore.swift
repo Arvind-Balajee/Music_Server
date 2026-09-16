@@ -16,6 +16,7 @@ final class SettingsStore: ObservableObject {
         static let serverHost = "musicbox.settings.serverHost"
         static let serverPort = "musicbox.settings.serverPort"
         static let useMockData = "musicbox.settings.useMockData"
+        static let appearanceMode = "musicbox.settings.appearanceMode"
     }
 
     @Published var serverHost: String {
@@ -32,6 +33,12 @@ final class SettingsStore: ObservableObject {
         didSet { defaults.set(useMockData, forKey: Keys.useMockData) }
     }
 
+    /// Light/Dark/System override — defaults to `.system` (follow the device),
+    /// same "no setup required" philosophy as `useMockData` defaulting to `true`.
+    @Published var appearanceMode: AppearanceMode {
+        didSet { defaults.set(appearanceMode.rawValue, forKey: Keys.appearanceMode) }
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -39,6 +46,8 @@ final class SettingsStore: ObservableObject {
         self.serverHost = defaults.string(forKey: Keys.serverHost) ?? "musicbox.local"
         self.serverPort = defaults.object(forKey: Keys.serverPort) as? Int ?? 8080
         self.useMockData = defaults.object(forKey: Keys.useMockData) as? Bool ?? true
+        self.appearanceMode = defaults.string(forKey: Keys.appearanceMode)
+            .flatMap(AppearanceMode.init(rawValue:)) ?? .system
     }
 
     /// `http://<host>:<port>` built from the persisted fields, or `nil` if the

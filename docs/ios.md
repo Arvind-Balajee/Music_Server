@@ -70,7 +70,10 @@ composition root that decides whether `MockMusicBoxAPIClient` or
   audio behind it until Agent 2/4's server is reachable end-to-end.
 * **Settings** (`Settings/SettingsStore.swift`): server address / mDNS name,
   persisted via `UserDefaults` — this is where the mock-vs-live `APIClient`
-  switch lives.
+  switch lives. Also holds `appearanceMode` (`AppearanceMode.swift`:
+  System/Light/Dark, defaulting to System), applied via `.preferredColorScheme`
+  at the app root (`MusicBoxApp.swift`) so it affects every screen including
+  the Now Playing full-screen cover.
 
 No MusicKit, no DRM-related APIs — this only ever plays the user's own files
 served by MusicBox.
