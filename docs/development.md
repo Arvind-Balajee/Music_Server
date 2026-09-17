@@ -37,16 +37,20 @@ musicbox-server doctor --config config/musicbox.toml
 musicbox-server version
 ```
 
-`run` starts the event loop + HTTP API. `scan` runs the library scanner once and
-exits (useful for cron/manual re-index without restarting the server). `status`
-queries a running instance's `/api/v1/status`. `doctor` checks config validity,
-DB reachability, and library root permissions without starting the server.
+`run` and `scan` are implemented: `run` starts the real event loop + HTTP API
+(`docs/api.md`); `scan` runs the library scanner once against `[library].paths`
+and exits (useful for cron/manual re-index without restarting the server).
+`status` (query a running instance's `/api/v1/status` from the CLI) and
+`doctor` (config/DB/permissions preflight checks) are not implemented yet —
+use `curl http://<host>:<port>/api/v1/status` in the meantime.
 
 ## Configuration
 
-TOML, default path `config/musicbox.toml` (see `Plan.md` §19 for the canonical
-example). Precedence: built-in defaults < config file < CLI flags (`--port`,
-`--config`, `--library`, `--log-level` override the file).
+TOML, loaded only when `--config <path>` is explicitly passed (otherwise
+`run`/`scan` use built-in defaults: `0.0.0.0:8080`, no library paths,
+`./musicbox.db`) — see `Plan.md` §19 for the canonical file example. Only
+`--config` exists today; per-field CLI overrides (`--port`, `--library`,
+`--log-level`) described in earlier drafts of this doc are not implemented.
 
 ## Git Workflow
 

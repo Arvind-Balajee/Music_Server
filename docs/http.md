@@ -191,4 +191,6 @@ client backs up the outbound buffer, not server memory.
 
 `200, 206, 400, 404, 405, 416, 500` — see `Plan.md` §8 for the full list this maps
 to (`Content-Length`, `Content-Type`, `Connection`, `Range`, `Content-Range`,
-`Accept-Ranges` headers).
+`Accept-Ranges` headers). Agent 4 (docs/api.md) additively extended
+`HttpStatus` with `201 Created`/`204 No Content` for the playlist CRUD
+endpoints, which weren't part of this streaming-focused original set.

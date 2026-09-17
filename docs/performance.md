@@ -76,10 +76,12 @@ not fill it in until you have actually run the benchmark.
 
 ## Results
 
-_No benchmarks have been run yet — there are no real `/api/v1/*` routes on
-`main` to benchmark against yet, only the temporary Milestone-1 demo handler
-(see `docs/testing.md`). The rows below are the target metrics from `Plan.md`
-§16, to be filled in once Agent 4's API layer lands._
+_No formal benchmarks have been run yet — real `/api/v1/*` routes now exist
+and were spot-checked manually (curl against status/artists/albums/tracks/
+streaming+Range/playlists, see `docs/api.md`), but `scripts/benchmark.sh`
+itself hasn't been pointed at the real server for an actual measurement run.
+The rows below are the target metrics from `Plan.md` §16, still TBD until
+someone runs it for real._
 
 **Environment:** TBD (record: CPU, RAM, OS/kernel version, storage — SSD/HDD/
 model —, network — wired/Wi-Fi generation/link speed —, and whether this is

@@ -3,6 +3,14 @@
 Owner: Agent 4 (API Layer), built on `server/include/musicbox/http/` (Agent 2) and
 `server/include/musicbox/db/` (Agent 3). Base path: `/api/v1`.
 
+**Status: implemented and wired into `musicbox-server run`** (`server/src/api/`,
+composed in `server/src/main.cpp`). Every endpoint below except the two
+"Proposed: Sync Endpoints" at the bottom of this file is real, tested
+end-to-end against real SQLite-backed repositories and real files on disk
+(`tests/unit/api/ApiRoutesTest.cpp`, plus a manual `curl` pass covering
+status/artists/albums/tracks/streaming+Range/playlist CRUD). `run` no longer
+serves the old fixed "MusicBox" demo response.
+
 ## Conventions
 
 * All responses are `application/json` except `/stream` (audio bytes) and
@@ -74,11 +82,26 @@ the full file and `Accept-Ranges: bytes`; a `Range` header returns `206` with
 `Content-Range`. The track is resolved `id -> DB row -> absolute path` server-side —
 the path is never accepted from the client.
 
-### Error codes (initial set)
+### Error codes
 
 ```text
 TRACK_NOT_FOUND, ALBUM_NOT_FOUND, ARTIST_NOT_FOUND, PLAYLIST_NOT_FOUND
 BAD_REQUEST, RANGE_NOT_SATISFIABLE, VALIDATION_ERROR, INTERNAL_ERROR
+ARTWORK_NOT_FOUND   -- added by Agent 4: GET .../artwork when hasArtwork is
+                       false. Always true today, since MetadataExtractor
+                       (docs/database.md) never sets it -- artwork extraction
+                       itself isn't implemented, so this endpoint always 404s.
+```
+
+### Status codes
+
+`200, 206, 400, 404, 405, 416, 500` are Agent 2's original MVP set
+(`server/include/musicbox/http/HttpStatus.hpp`). Agent 4 additively extended
+it with the two REST-conventional codes the playlist endpoints need:
+
+```text
+201 Created      -- POST /api/v1/playlists
+204 No Content   -- DELETE endpoints, POST .../tracks, DELETE .../tracks/{id}
 ```
 
 ## Route -> Repository mapping

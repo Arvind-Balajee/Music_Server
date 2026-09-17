@@ -68,14 +68,13 @@ to the Pi separately — this repo does not include cross-compilation tooling,
 see §9 "Recommended next tasks").
 
 As of this writing, `musicbox-server run` starts the real epoll/kqueue event
-loop and listens on port 8080, but answers every request with a fixed
-`MusicBox` response (see the "TEMPORARY Milestone-1 demo wiring" comment in
-`server/src/main.cpp`) — there is no real `/api/v1/*` API behind it yet
-(Agent 4 hasn't landed). The deployment tooling in this directory (systemd
-unit, AP config, install script) is complete and installable today, and you
-can verify the service actually starts and responds; it will not serve real
-music/library data until Agent 4's API layer lands. See
-`docs/deployment.md` → "Integration dependencies" for exactly what's needed.
+loop and serves the real `/api/v1/*` API (docs/api.md) against your SQLite
+library — `musicbox-server scan --config <path>` indexes your music first.
+Both have been verified end-to-end on a development machine (build, scan a
+real file, run, curl status/artists/albums/tracks/streaming+Range/playlists),
+but **not yet on real Raspberry Pi hardware** — see §9. The deployment
+tooling in this directory (systemd unit, AP config, install script) targets
+exactly this CLI/config contract.
 
 ## 2. Copy this repo (or just `deployment/` + the binary) to the Pi
 
@@ -150,9 +149,13 @@ sudo systemctl status musicbox
 ```
 
 `install.sh` deliberately does **not** `systemctl start` the service for
-you (only `enable`s it) — see §1 above on `run` currently only serving a
-fixed demo response, not the real API. Auto-starting on install is the
-obvious next step once Agent 4's API layer lands (see `docs/deployment.md`).
+you (only `enable`s it) — the real API now exists (§1), but nothing has
+scanned a library on the target device yet at install time, and
+auto-starting before there's anything to serve isn't very useful. Run
+`musicbox-server scan --config /etc/musicbox/musicbox.toml` once, then start
+the service yourself (below). Auto-scan-then-start-on-install is a
+reasonable future `install.sh` enhancement (see `docs/deployment.md`), not
+implemented yet.
 
 `systemctl status musicbox` should show `active (running)` with
 `User=musicbox` and no restart-loop counter climbing. Follow logs with:
@@ -264,9 +267,9 @@ against; it does not implement the client side.
   too aggressive for some future feature (e.g. if `musicbox-server`
   eventually wants to write anywhere other than `/var/lib/musicbox`) are all
   things a real device will surface that a read-through cannot.
-* `run` serves only the temporary fixed demo response (see §1); `scan`,
-  `status`, and `doctor` are not implemented yet — the deployment plumbing is
-  ready for the real API, not validated against one yet.
+* `run` and `scan` are real and verified on a development machine (§1);
+  `status` and `doctor` (CLI subcommands, distinct from the HTTP
+  `/api/v1/status` route) are not implemented yet.
 * **netplan path untested against a real image.** The dhcpcd and
   NetworkManager paths at least mirror upstream Raspberry Pi OS's own
   defaults; the netplan path (`install_ap_netplan()`,

@@ -12,11 +12,14 @@ definition, an idempotent installer, and a step-by-step manual walkthrough).
 the environment this was produced in; see "Known limitations" below and
 `deployment/README.md` §9.
 
-Also blocked on: Agent 4's REST API layer not being implemented yet — see
-"Integration dependencies" below. `run` itself works (starts the real event
-loop) but only serves a fixed temporary demo response, not real endpoints;
-the deployment plumbing targets the CLI/config contract Agent 4 is building
-toward, but hasn't been exercised against a working API.
+Agent 4's REST API layer now exists and is wired into `run` (real
+`/api/v1/*` routes backed by SQLite, verified via `tests/unit/api/
+ApiRoutesTest.cpp` and a manual curl pass — see `docs/api.md`). What's not
+yet exercised is this deployment tooling *against* that real server on real
+Pi hardware (§9's hardware caveat still applies) — the CLI/config contract
+(`--config <path>`, `[server]`/`[library]`/`[database]` TOML fields) that
+`install.sh`/`musicbox.service` target is now the one `musicbox-server`
+actually implements, not just a documented target.
 
 For the actual step-by-step instructions (build, install, verify AP,
 verify mDNS, check service health), see **`deployment/README.md`** — this
@@ -124,22 +127,26 @@ refreshing opportunistically rather than only on failure. See
 
 ## Integration dependencies
 
-For this deployment tooling to do anything useful end-to-end, it needs:
+All of these are now done:
 
-1. `musicbox-server run --config <path>` to serve the real `/api/v1/*` API
-   (the event loop itself already runs — see `server/src/main.cpp`'s
-   "TEMPORARY Milestone-1 demo wiring" — Agent 4's API layer is what's
-   missing).
-2. The config loader (`musicbox::config::loadConfigFile`, already declared
-   in `server/include/musicbox/config/Config.hpp`) to be implemented and
-   wired into `run`, since the systemd unit's only contract with the binary
-   is `--config /etc/musicbox/musicbox.toml`.
-3. `GET /api/v1/status` (Plan.md §10) to exist, so `deployment/README.md`'s
-   verification `curl` command and any future health-check tooling
-   (`musicbox-server status`, `doctor`) have something to hit.
-4. No new requirement on Agent 3's library scanner: it should work
-   unmodified against `/media/musicbox/music` (or whatever
-   `--library-path` points at), same as any other directory.
+1. ~~`musicbox-server run --config <path>` to serve the real `/api/v1/*`
+   API~~ — done (`server/src/api/`, composed in `server/src/main.cpp`).
+2. ~~The config loader to be implemented and wired into `run`~~ — done
+   (`server/src/config/Config.cpp`, TOML via tomlplusplus); `--config
+   /etc/musicbox/musicbox.toml` (the systemd unit's contract) works as
+   documented.
+3. ~~`GET /api/v1/status` to exist~~ — done; `deployment/README.md`'s
+   verification `curl` command now hits a real endpoint. `musicbox-server
+   status`/`doctor` (separate CLI subcommands that query a *running*
+   instance or preflight-check config/DB/permissions) are still
+   unimplemented — use `curl`/the iOS app against `run` for now.
+4. Agent 3's library scanner needed no changes: `musicbox-server scan
+   --config <path>` works unmodified against `/media/musicbox/music` (or
+   whatever `[library].paths` points at), verified against a real
+   directory + real file.
+
+Remaining gap: none of this has been run on real Raspberry Pi hardware yet
+(see "Known limitations" below) — only on a development machine.
 
 ## Known limitations
 

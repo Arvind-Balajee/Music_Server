@@ -20,9 +20,12 @@ parsing, and zero-copy byte-range file streaming. See
 
 ## Status
 
-Early stage — architecture and interface contracts are in place; implementation is
-in progress. See `Plan.md` §23 for the full milestone list and `docs/architecture.md`
-for the current design. This section will be kept up to date as milestones land.
+Core server loop works end-to-end: build, `scan` a real library, `run`, and
+browse/search/stream/manage-playlists against the real `/api/v1/*` API
+(`docs/api.md`) from `curl` or the iOS app. Not yet done: `musicbox-sync`'s
+proposed server-side endpoints, real Raspberry Pi hardware validation, and
+performance benchmarking against the real server. See `Plan.md` §23 for the
+full milestone list and `docs/architecture.md` for the current design.
 
 ## Architecture
 
@@ -66,11 +69,14 @@ See `docs/development.md` for prerequisites, sanitizer builds, and the full CLI.
 ## Running
 
 ```bash
+./build/server/musicbox-server scan --config config/musicbox.toml   # index your library first
 ./build/server/musicbox-server run --config config/musicbox.toml
 ```
 
-(`run` is still being implemented — see `Plan.md` milestones 1-4. `version` works
-today: `./build/server/musicbox-server version`.)
+`run` starts the real event loop and serves the real REST API (`docs/api.md`)
+against whatever `scan` has indexed. `musicbox-server status`/`doctor` (CLI
+subcommands that would query/preflight-check a running instance) aren't
+implemented yet — use `curl http://localhost:8080/api/v1/status` instead.
 
 ## Adding Music
 

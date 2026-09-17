@@ -22,7 +22,7 @@ support merged, or actively being built per this round's task assignment),
 | Database repositories | Agent 3 (Music Library + SQLite) | done | `tests/unit/db/*RepositoryTest.cpp` (Track/Artist/Album/LibraryRoot/Playlist), against real in-memory SQLite. |
 | Music scanning | Agent 3 | done | `tests/unit/library/LibraryScannerTest.cpp` + `MetadataExtractorTest.cpp` (real TagLib integration). |
 | Buffer handling | Agent 1 (Networking Core) | done | `tests/unit/net/BufferTest.cpp`. |
-| JSON serialization | Agent 4 (REST API) | not started | Agent 4 (API layer) has not started; no route handlers or JSON (de)serialization code exists yet. |
+| JSON serialization | Agent 4 (REST API) | done | `tests/unit/api/ApiRoutesTest.cpp` -- dispatches real `HttpRequest`s through the real router against an in-memory SQLite DB, asserting exact field names/shapes against the iOS client's Codable models. |
 | Cache policies | Agent 5 (iOS) | not started | iOS app skeleton (`client-ios/`) exists with mocked networking, but no on-device playback cache yet (documented as a deliberate deferral in `docs/ios.md`). |
 | `Id<Tag>` model | Agent 0 / shared | done | `tests/unit/IdsTest.cpp`; extended this round with boundary-value coverage (see below). |
 | `Sha256` util | Agent 6 / shared | done | `tests/unit/Sha256Test.cpp`; extended this round with a 64 KiB chunk-boundary case (see below). |
@@ -31,15 +31,15 @@ support merged, or actively being built per this round's task assignment),
 
 | Scenario (Plan.md §15) | Responsible area | Status | Notes |
 |---|---|---|---|
-| Fragmented requests | Agent 1 + Agent 2 | done (at the layer level) | `tests/integration/net/FragmentationTest.cpp` (raw `EventLoop`, byte-level) + `HttpRequestParserTest.cpp` (parser, byte-at-a-time). Not yet re-verified with the two wired *together* end-to-end (`EventLoop` still runs the temporary Milestone-1 demo handler, not the real parser/router) — `scripts/fragment_client.py --chunk-size N` is the tool for that once Agent 4 wires them up. |
+| Fragmented requests | Agent 1 + Agent 2 | done | `tests/integration/net/FragmentationTest.cpp` (raw `EventLoop`, byte-level) + `HttpRequestParserTest.cpp` (parser, byte-at-a-time). `EventLoop` now runs the real `HttpRequestParser` + `Router` (server/src/main.cpp), verified manually via curl; `scripts/fragment_client.py --chunk-size N` remains available for deliberately adversarial fragmentation against the real server. |
 | Multiple HTTP requests per connection | Agent 1 + Agent 2 | done (parser-level) | `HttpRequestParserTest.cpp` covers pipelined requests in one `feed()` call; not yet exercised over a real persistent `TcpConnection`. `scripts/fragment_client.py --repeat N` for that once wired. |
 | Partial writes | Agent 1 | done | `TcpConnection::flushOutbound()` implemented and exercised by `tests/integration/net/BackpressureTest.cpp` (slow client reading one byte at a time forces multiple partial `send()`s). |
 | Slow clients | Agent 1 | done | Same `BackpressureTest.cpp`; `scripts/fragment_client.py --recv-chunk-size 1 --recv-delay-ms N` remains available for manual/exploratory runs against a real server once one exists end-to-end. |
 | Disconnect during transfer | Agent 1 | tooling ready, not scenario-tested | `EventLoop`/`TcpConnection` handle peer disconnects (see `docs/networking.md`), but no test specifically disconnects *mid-stream*; `scripts/fragment_client.py --close-after-bytes N` is built for this once a streaming endpoint exists. |
 | Invalid requests | Agent 2 | done | `HttpRequestParserTest.cpp` covers malformed request lines/headers/Content-Length -> `400`. |
 | Huge headers | Agent 2 | done | `HttpRequestParserTest.cpp` covers `maxHeaderBytes`/`maxHeaderCount`/`maxRequestLineLength` limit rejection. |
-| Range requests | Agent 2 | done | `RangeTest.cpp` (parsing) + `FileStreamSourceTest.cpp` (serving the resolved window). Not yet wired to a real `GET .../stream` route (Agent 4). |
-| Concurrent streams | Agent 1 + Agent 4 | not started (tooling ready) | `tests/integration/net/ManyConnectionsTest.cpp` covers connection churn generically, not streaming specifically. `scripts/benchmark.sh --stream-path ... --concurrency 10` measures the real Plan.md §16 target once Agent 4's stream route exists. |
+| Range requests | Agent 2 + Agent 4 | done | `RangeTest.cpp` (parsing) + `FileStreamSourceTest.cpp` (serving the resolved window) + `ApiRoutesTest.cpp`'s stream section (full route, real file, 200/206/416 cases) + manual curl verification of byte-identical full/ranged downloads against a real file. |
+| Concurrent streams | Agent 1 + Agent 4 | tooling ready, not benchmarked | `tests/integration/net/ManyConnectionsTest.cpp` covers connection churn generically. The real stream route now exists (`/api/v1/tracks/{id}/stream`); `scripts/benchmark.sh --stream-path /api/v1/tracks/1/stream --concurrency 10` can now measure the real Plan.md §16 target -- not yet run. |
 
 ## Streaming test file sizes (Plan.md §15)
 
@@ -53,12 +53,15 @@ support merged, or actively being built per this round's task assignment),
 "Tooling ready" means the fixture generator and test client exist and were
 verified against a throwaway TCP/HTTP stub (see this agent's report). Agent 2's
 `FileStreamSource`/`FileStreamResponseBody` (docs/http.md) has since landed and
-is unit-tested (`FileStreamSourceTest.cpp`, including a "same fixed-size read
-buffer drains files of increasing size" assertion), but there is still no
-`musicbox-server` HTTP route wiring it up end-to-end (Agent 4). Once that
-exists, re-verify memory-boundedness against the real server with the 1 GB+
-fixture — e.g. `ps`/`/usr/bin/time -l` RSS sampling — rather than trusting the
-unit test alone.
+is unit-tested (`FileStreamSourceTest.cpp`), and Agent 4 has wired it into a
+real `GET /api/v1/tracks/{id}/stream` route plus the pull-based streaming body
+on `TcpConnection` (docs/adr/0008) so a response is sent in bounded chunks
+rather than buffered whole. Verified manually against a real (small, ~500 KB)
+file: full download is byte-identical to the source file, and a `Range`
+request returns the exact requested window. **Not yet re-verified at the
+1 GB+ fixture size** — `ps`/`/usr/bin/time -l` RSS sampling while streaming
+the large fixture through the real server would confirm memory stays bounded
+in practice, not just in the unit test.
 
 ## Benchmarks (Plan.md §16)
 

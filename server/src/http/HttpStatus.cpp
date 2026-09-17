@@ -6,6 +6,10 @@ const char* reasonPhrase(HttpStatus status) noexcept {
     switch (status) {
     case HttpStatus::Ok:
         return "OK";
+    case HttpStatus::Created:
+        return "Created";
+    case HttpStatus::NoContent:
+        return "No Content";
     case HttpStatus::PartialContent:
         return "Partial Content";
     case HttpStatus::BadRequest:
