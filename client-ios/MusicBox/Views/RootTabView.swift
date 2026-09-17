@@ -62,14 +62,7 @@ struct RootTabView: View {
             }
         }
         .fullScreenCover(isPresented: $showNowPlaying) {
-            NavigationStack {
-                NowPlayingView(viewModel: NowPlayingViewModel(playback: environment.playback))
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") { showNowPlaying = false }
-                        }
-                    }
-            }
+            NowPlayingView(viewModel: NowPlayingViewModel(playback: environment.playback))
         }
     }
 }

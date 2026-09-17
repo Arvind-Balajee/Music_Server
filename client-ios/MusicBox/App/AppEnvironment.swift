@@ -33,7 +33,21 @@ final class AppEnvironment: ObservableObject {
         let box = APIClientBox(initialClient)
         self.clientBox = box
         self.apiClient = initialClient
-        self.playback = PlaybackController(streamURLProvider: { trackId in box.client.streamURL(for: trackId) })
+        self.playback = PlaybackController(
+            streamURLProvider: { trackId in box.client.streamURL(for: trackId) },
+            artworkURLProvider: { trackId in box.client.artworkURL(for: trackId) }
+        )
+
+        // `playback` is a nested ObservableObject, not a `@Published` property on
+        // `AppEnvironment` itself, so its changes (currentTrack, isPlaying, ...)
+        // wouldn't otherwise trigger `AppEnvironment.objectWillChange` -- forward
+        // them explicitly so views that only hold `@EnvironmentObject
+        // environment` (e.g. `RootTabView`'s `environment.playback.currentTrack !=
+        // nil` mini-player gate) still re-render when playback state changes.
+        playback.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.objectWillChange.send() }
+            .store(in: &cancellables)
 
         // Re-resolve the client whenever Settings changes (mock/live toggle or
         // server address edits). The initial values are applied above already,

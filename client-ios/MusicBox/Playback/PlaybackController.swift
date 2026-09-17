@@ -34,20 +34,36 @@ final class PlaybackController: ObservableObject {
 
     private let player: AVPlayer
     private let streamURLProvider: (TrackId) -> URL
+    private let artworkURLProvider: (TrackId) -> URL
     private var timeObserverToken: Any?
     private var shuffleOrder: [Int] = []
     private var itemEndObserver: NSObjectProtocol?
 
-    /// - Parameter streamURLProvider: resolves a track id to its absolute stream
-    ///   URL. Injected rather than depending on `MusicBoxAPIClient`/`TrackRepository`
-    ///   directly so `PlaybackController` stays a leaf service usable from any
-    ///   ViewModel without pulling in the whole networking stack.
-    init(streamURLProvider: @escaping (TrackId) -> URL, player: AVPlayer = AVPlayer()) {
+    /// - Parameters:
+    ///   - streamURLProvider: resolves a track id to its absolute stream URL.
+    ///   - artworkURLProvider: resolves a track id to its absolute artwork URL.
+    ///   Both are injected rather than depending on
+    ///   `MusicBoxAPIClient`/`TrackRepository` directly so `PlaybackController`
+    ///   stays a leaf service usable from any ViewModel without pulling in the
+    ///   whole networking stack.
+    init(
+        streamURLProvider: @escaping (TrackId) -> URL,
+        artworkURLProvider: @escaping (TrackId) -> URL,
+        player: AVPlayer = AVPlayer()
+    ) {
         self.streamURLProvider = streamURLProvider
+        self.artworkURLProvider = artworkURLProvider
         self.player = player
         configureAudioSession()
         configureRemoteCommandCenter()
         observePlayerTime()
+    }
+
+    /// Absolute artwork URL for `track`, for `ArtworkView` to load via
+    /// `AsyncImage`. Resolved the same way as stream URLs (see
+    /// `streamURLProvider`) rather than trusting any URL embedded in `Track`.
+    func artworkURL(for track: Track) -> URL {
+        artworkURLProvider(track.id)
     }
 
     deinit {
@@ -137,6 +153,46 @@ final class PlaybackController: ObservableObject {
 
     func cycleRepeatMode() {
         repeatMode = repeatMode.next
+    }
+
+    // MARK: - Queue editing (Up Next)
+
+    /// Jumps straight to `queue[index]` and starts playing it, for tapping a
+    /// row in the Up Next / queue sheet.
+    func playQueueItem(at index: Int) {
+        guard queue.indices.contains(index) else { return }
+        currentIndex = index
+        loadCurrentItem(autoplay: true)
+    }
+
+    /// Reorders the queue (SwiftUI `List.onMove` signature). Keeps
+    /// `currentIndex` pointing at the same *track*, not the same slot, so
+    /// dragging rows around never changes what's currently playing.
+    func moveQueueItems(fromOffsets source: IndexSet, toOffset destination: Int) {
+        let playingTrackId = currentTrack?.id
+        queue.move(fromOffsets: source, toOffset: destination)
+        if let playingTrackId {
+            currentIndex = queue.firstIndex(where: { $0.id == playingTrackId })
+        }
+        shuffleOrder = Array(queue.indices)
+        if shuffleEnabled { shuffleOrder.shuffle() }
+    }
+
+    /// Removes rows from the queue (SwiftUI `List.onDelete` signature). Removing
+    /// the currently-playing track stops playback rather than silently jumping
+    /// elsewhere.
+    func removeQueueItems(atOffsets offsets: IndexSet) {
+        let playingTrackId = currentTrack?.id
+        queue.remove(atOffsets: offsets)
+        if let playingTrackId, queue.contains(where: { $0.id == playingTrackId }) {
+            currentIndex = queue.firstIndex(where: { $0.id == playingTrackId })
+        } else {
+            currentIndex = nil
+            player.replaceCurrentItem(with: nil)
+            isPlaying = false
+        }
+        shuffleOrder = Array(queue.indices)
+        if shuffleEnabled { shuffleOrder.shuffle() }
     }
 
     // MARK: - Internal playback mechanics

@@ -36,10 +36,20 @@ final class NowPlayingViewModel: ObservableObject {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
+    func artworkURL(for track: Track) -> URL { playback.artworkURL(for: track) }
+
     func togglePlayPause() { playback.togglePlayPause() }
     func skipToNext() { playback.skipToNext() }
     func skipToPrevious() { playback.skipToPrevious() }
     func seek(to time: TimeInterval) { playback.seek(to: time) }
     func toggleShuffle() { playback.setShuffle(!playback.shuffleEnabled) }
     func cycleRepeatMode() { playback.cycleRepeatMode() }
+
+    func playQueueItem(at index: Int) { playback.playQueueItem(at: index) }
+    func moveQueueItems(fromOffsets source: IndexSet, toOffset destination: Int) {
+        playback.moveQueueItems(fromOffsets: source, toOffset: destination)
+    }
+    func removeQueueItems(atOffsets offsets: IndexSet) {
+        playback.removeQueueItems(atOffsets: offsets)
+    }
 }
