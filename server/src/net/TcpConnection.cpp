@@ -29,7 +29,25 @@ void TcpConnection::queueWrite(std::span<const std::byte> data) {
     outbound_.append(data);
 }
 
+void TcpConnection::setStreamingBody(StreamingBodyPuller pull) {
+    streamingBody_ = std::move(pull);
+}
+
 void TcpConnection::flushOutbound() {
+    // Refill from the streaming body (if any) before attempting to send, so a
+    // caller streaming a large file never has to hand the whole thing to
+    // queueWrite() up front (see docs/adr/0008-tcpconnection-streaming-body.md).
+    // Chunk size matches readInto()'s kReadChunkSize.
+    while (streamingBody_ && outbound_.readableBytes() < kReadChunkSize) {
+        std::array<std::byte, kReadChunkSize> chunk{};
+        std::size_t n = streamingBody_(std::span<std::byte>(chunk));
+        if (n == 0) {
+            streamingBody_ = nullptr; // EOF
+            break;
+        }
+        outbound_.append(std::span<const std::byte>(chunk.data(), n));
+    }
+
     if (outbound_.empty()) {
         return;
     }

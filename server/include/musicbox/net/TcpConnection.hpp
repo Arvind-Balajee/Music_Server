@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <span>
 
 #include "musicbox/net/Buffer.hpp"
@@ -34,7 +35,20 @@ public:
     // doesn't fully drain the queue — never assumes one send() flushes everything.
     void flushOutbound();
 
-    [[nodiscard]] bool hasPendingWrites() const noexcept { return !outbound_.empty(); }
+    // Pull-based streaming body: `pull(dst)` should write up to dst.size()
+    // bytes and return the count written, or 0 at EOF (see
+    // docs/adr/0008-tcpconnection-streaming-body.md). flushOutbound() refills
+    // the outbound buffer from `pull` in bounded chunks as room frees up,
+    // rather than requiring the whole payload to be handed to queueWrite() up
+    // front -- this is how a multi-hundred-MB audio file gets sent without
+    // ever holding more than one chunk of it in memory at a time. At most one
+    // streaming body may be active; a new call replaces any previous one.
+    using StreamingBodyPuller = std::function<std::size_t(std::span<std::byte>)>;
+    void setStreamingBody(StreamingBodyPuller pull);
+
+    [[nodiscard]] bool hasPendingWrites() const noexcept {
+        return !outbound_.empty() || static_cast<bool>(streamingBody_);
+    }
     [[nodiscard]] bool hasError() const noexcept { return error_; }
 
     // Additive (see docs/adr/0007-tcpconnection-close-after-flush.md): tells the EventLoop to
@@ -48,6 +62,7 @@ private:
     Socket socket_;
     Buffer inbound_;
     Buffer outbound_;
+    StreamingBodyPuller streamingBody_;
     bool error_ = false;
     bool closeAfterFlush_ = false;
 };
