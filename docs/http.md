@@ -140,6 +140,17 @@ public:
 matches unless both method and full path match; unmatched path -> 404, matched path
 with no matching method -> 405.
 
+**HEAD is handled generically**, not by registering it per route: `PathRouter::dispatch()`
+matches a `HEAD` request against whatever `GET` route handles the same path and
+runs that handler unmodified (RFC 7231 §4.3.2 -- HEAD is identical to GET except
+no body is sent). The returned `HttpResponse` still has its body/streamingBody
+fully populated, since headers like `Content-Length`/`Content-Range` need to
+reflect exactly what the equivalent `GET` would have sent; the composition root
+(`writeHttpResponse()` in `server/src/main.cpp`) is what actually omits the body
+bytes on the wire for a HEAD request. Routes never need to be registered under
+`"HEAD"` explicitly -- doing so would have no effect, since dispatch never
+matches a request's real method against a registered `HEAD` route.
+
 ## Range Requests
 
 Header: `Range: bytes=<spec>` where `<spec>` is one of:

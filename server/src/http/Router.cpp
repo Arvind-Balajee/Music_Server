@@ -47,6 +47,17 @@ void PathRouter::addRoute(std::string method, std::string pattern, RequestHandle
 }
 
 HttpResponse PathRouter::dispatch(const HttpRequest& request) const {
+    // HEAD is RFC 7231 §4.3.2's "identical to GET, but the server MUST NOT send
+    // a message body" -- a generic HTTP-level policy, not a route-specific
+    // concern, so it's handled once here instead of requiring every GET route
+    // to also be registered under HEAD. A HEAD request is matched against
+    // whatever GET route handles the same path and that handler runs exactly
+    // as it would for a GET; the response returned still has its full
+    // body/streamingBody populated (headers like Content-Length/Content-Range
+    // need to reflect what a GET would have sent). Actually omitting the body
+    // bytes on the wire is the transport layer's job -- see
+    // writeHttpResponse() in server/src/main.cpp.
+    const bool isHeadRequest = request.method == "HEAD";
     const std::vector<std::string> requestSegments = splitPath(request.path);
     bool pathMatchedSomeMethod = false;
 
@@ -72,7 +83,14 @@ HttpResponse PathRouter::dispatch(const HttpRequest& request) const {
         }
 
         pathMatchedSomeMethod = true;
-        if (route.method == request.method) {
+        // A HEAD request only ever matches a GET route, never a literal "HEAD"
+        // registration (see this function's opening comment) -- checking
+        // isHeadRequest first, rather than `route.method == request.method ||
+        // ...`, avoids an insertion-order ambiguity if both happened to be
+        // registered for the same path.
+        const bool methodMatches =
+            isHeadRequest ? route.method == "GET" : route.method == request.method;
+        if (methodMatches) {
             return route.handler(request, params);
         }
     }

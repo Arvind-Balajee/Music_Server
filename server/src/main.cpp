@@ -72,8 +72,15 @@ std::optional<CliArgs> parseArgs(int argc, char** argv) {
 // Content-Length for non-streaming bodies (streaming responses set their own
 // Content-Length in server/src/api/Api.cpp, derived from the resolved byte
 // range, since this function has no way to know it otherwise).
+//
+// `suppressBody` implements the wire-level half of HEAD support (the other
+// half is Router::dispatch() matching HEAD against the GET route -- see its
+// comment in server/src/http/Router.cpp): `response` here is exactly what the
+// equivalent GET would have produced, so the headers below (including
+// Content-Length/Content-Range) are correct as-is; RFC 7231 §4.3.2 just
+// forbids actually sending the body bytes that would follow them.
 void writeHttpResponse(musicbox::net::TcpConnection& connection,
-                       musicbox::http::HttpResponse response) {
+                       musicbox::http::HttpResponse response, bool suppressBody = false) {
     using musicbox::http::reasonPhrase;
 
     if (!response.isStreaming()) {
@@ -88,6 +95,14 @@ void writeHttpResponse(musicbox::net::TcpConnection& connection,
     }
     head += "\r\n";
     connection.queueWrite(std::as_bytes(std::span<const char>(head.data(), head.size())));
+
+    if (suppressBody) {
+        // Headers are already queued above; dropping `response` here (its
+        // streamingBody, if any) releases the underlying file handle without
+        // ever pulling a byte from it.
+        connection.closeAfterFlush();
+        return;
+    }
 
     if (response.isStreaming()) {
         // Adapted into TcpConnection's pull-based streaming body
@@ -145,12 +160,14 @@ void runServer(const musicbox::config::Config& config) {
         }
 
         http::HttpResponse response;
+        bool isHeadRequest = false;
         if (result.status == http::ParseStatus::Error) {
             response = http::HttpResponse::error(result.errorStatus, "BAD_REQUEST",
                                                  "Malformed HTTP request.");
             std::cout << "-> " << static_cast<int>(result.errorStatus) << " (parse error)"
                       << std::endl;
         } else {
+            isHeadRequest = result.request.method == "HEAD";
             response = router->dispatch(result.request);
             std::cout << result.request.method << ' ' << result.request.path << " -> "
                       << static_cast<int>(response.statusCode) << std::endl;
@@ -159,7 +176,7 @@ void runServer(const musicbox::config::Config& config) {
         // One response per connection (docs/adr/0009) -- any further buffered
         // bytes (a pipelined next request) are simply never read; the
         // connection closes once this response drains.
-        writeHttpResponse(connection, std::move(response));
+        writeHttpResponse(connection, std::move(response), isHeadRequest);
     });
 
     loop.onClosed([&](net::TcpConnection& connection) { parsers.erase(&connection); });

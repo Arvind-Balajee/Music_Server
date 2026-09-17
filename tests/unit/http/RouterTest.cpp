@@ -106,3 +106,55 @@ TEST_CASE("Router::addRoute throws on a duplicate (method, pattern) registration
                                      }),
                     std::logic_error);
 }
+
+TEST_CASE("Router dispatches HEAD against the GET route for the same path", "[http][router]") {
+    auto router = createRouter();
+    int getHandlerCalls = 0;
+    router->addRoute("GET", "/api/v1/tracks/{id}",
+                     [&getHandlerCalls](const HttpRequest&, const RouteParams& params) {
+                         ++getHandlerCalls;
+                         REQUIRE(params.at("id") == "42");
+                         return HttpResponse::text(HttpStatus::Ok, "track 42 body");
+                     });
+
+    auto response = router->dispatch(makeRequest("HEAD", "/api/v1/tracks/42"));
+
+    CHECK(getHandlerCalls == 1);
+    CHECK(response.statusCode == HttpStatus::Ok);
+    // dispatch() itself still returns the full body a GET would have produced
+    // -- omitting it on the wire is writeHttpResponse()'s job (server/src/main.cpp),
+    // not the router's (see docs/http.md's "HEAD is handled generically").
+    CHECK_FALSE(response.body.empty());
+}
+
+TEST_CASE("Router HEAD dispatch still 404s/405s exactly like the equivalent GET would",
+          "[http][router]") {
+    auto router = createRouter();
+    router->addRoute("POST", "/api/v1/playlists", [](const HttpRequest&, const RouteParams&) {
+        return HttpResponse::text(HttpStatus::Created, "created");
+    });
+
+    // No route at all for this path.
+    auto notFound = router->dispatch(makeRequest("HEAD", "/api/v1/nonexistent"));
+    CHECK(notFound.statusCode == HttpStatus::NotFound);
+
+    // Path matches, but only POST is registered -- HEAD only ever matches GET.
+    auto methodNotAllowed = router->dispatch(makeRequest("HEAD", "/api/v1/playlists"));
+    CHECK(methodNotAllowed.statusCode == HttpStatus::MethodNotAllowed);
+}
+
+TEST_CASE("Router never matches an explicitly-registered HEAD route", "[http][router]") {
+    // Documented behavior (docs/http.md): registering "HEAD" explicitly has no
+    // effect, since dispatch() only ever matches HEAD against GET routes, never
+    // against a request's literal method equal to "HEAD". The path itself is
+    // still recognized (a route pattern for it exists), so the correct outcome
+    // is 405 Method Not Allowed, not 404 -- the same way requesting "DELETE"
+    // against a GET-only route would be.
+    auto router = createRouter();
+    router->addRoute("HEAD", "/x", [](const HttpRequest&, const RouteParams&) {
+        return HttpResponse::text(HttpStatus::Ok, "should be unreachable");
+    });
+
+    auto response = router->dispatch(makeRequest("HEAD", "/x"));
+    CHECK(response.statusCode == HttpStatus::MethodNotAllowed);
+}
