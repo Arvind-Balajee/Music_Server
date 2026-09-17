@@ -35,6 +35,9 @@ Makefile
 # Environment/secrets
 .env
 
+# Personal local-testing config (machine-specific paths, not the shared template)
+config/local.toml
+
 # SQLite runtime files
 *.db
 *.db-wal
