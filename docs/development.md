@@ -5,6 +5,8 @@
 * CMake >= 3.24, a C++20 compiler (Clang 15+/GCC 12+/AppleClang 15+).
 * SQLite3 dev headers (system package; `brew install sqlite3` / `apt install
   libsqlite3-dev` — CMake also falls back to `FetchContent` if not found).
+* OpenSSL `libcrypto` dev headers, used for SHA-256 (`brew install openssl@3` /
+  `apt install libssl-dev`; see `docs/adr/0010-use-openssl-for-sha256.md`).
 * Xcode 15+ for `client-ios/`.
 
 ## Building

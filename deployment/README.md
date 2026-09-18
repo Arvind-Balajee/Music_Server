@@ -54,9 +54,10 @@ tools that read them — but if you're grepping the repo, know there are two.
 
 ## 1. Build the server first
 
-From the repo root:
+Install the build dependencies, then build from the repo root:
 
 ```bash
+sudo apt install cmake g++ libsqlite3-dev libtag1-dev libssl-dev
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ```

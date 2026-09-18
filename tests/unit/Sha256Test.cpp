@@ -32,6 +32,19 @@ TEST_CASE("sha256File matches sha256Bytes for the same content", "[util][sha256]
     std::remove(path.c_str());
 }
 
+TEST_CASE("sha256File matches the million-'a' known vector across many chunks", "[util][sha256]") {
+    // FIPS 180-2 Appendix B.3. sha256File and sha256Bytes share one backend,
+    // so this checks the multi-chunk read path against an external answer.
+    const std::string path = "musicbox_sha256_test_million_a.tmp";
+    {
+        const std::string content(1'000'000, 'a');
+        std::ofstream out(path, std::ios::binary);
+        out.write(content.data(), static_cast<std::streamsize>(content.size()));
+    }
+    CHECK(sha256File(path) == "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0");
+    std::remove(path.c_str());
+}
+
 TEST_CASE("sha256File throws for a missing file", "[util][sha256]") {
     CHECK_THROWS_AS(sha256File("/nonexistent/path/that/should/not/exist.bin"), std::runtime_error);
 }

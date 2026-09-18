@@ -15,13 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install SQLite3 + TagLib (Linux)
+      - name: Install SQLite3 + TagLib + OpenSSL (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libtag1-dev
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libtag1-dev libssl-dev
 
-      - name: Install TagLib (macOS)
+      - name: Install TagLib + OpenSSL (macOS)
         if: runner.os == 'macOS'
-        run: brew install taglib
+        run: brew install taglib openssl@3
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -37,8 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install SQLite3 + TagLib
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libtag1-dev
+      - name: Install SQLite3 + TagLib + OpenSSL
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libtag1-dev libssl-dev
 
       - name: Configure (ASan + UBSan)
         run: cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DMUSICBOX_SANITIZE=address,undefined
