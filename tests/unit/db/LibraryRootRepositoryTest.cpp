@@ -65,8 +65,7 @@ TEST_CASE("LibraryRootRepository retire hides a root from list", "[db][libraryro
     CHECK(active.front().id == kept.id);
 }
 
-TEST_CASE("LibraryRootRepository upsert revives a retired root in place",
-          "[db][libraryroot]") {
+TEST_CASE("LibraryRootRepository upsert revives a retired root in place", "[db][libraryroot]") {
     auto repo = makeSqliteLibraryRootRepository(musicbox::test::uniqueMemoryDbUri());
     const auto original = repo->upsert("/media/music");
     repo->retire(original.id, std::chrono::system_clock::now());

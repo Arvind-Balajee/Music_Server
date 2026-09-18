@@ -32,8 +32,7 @@ public:
     // The caller is responsible for soft-deleting the root's tracks; this only
     // records the root's own state. Kept rather than deleted -- see
     // migration 0002 for why deletion isn't possible.
-    virtual void retire(musicbox::LibraryRootId id,
-                        std::chrono::system_clock::time_point when) = 0;
+    virtual void retire(musicbox::LibraryRootId id, std::chrono::system_clock::time_point when) = 0;
 };
 
 // See TrackRepository.hpp's makeSqliteTrackRepository for the databasePath

@@ -219,9 +219,8 @@ void retireUnconfiguredRoots(const musicbox::config::Config& config,
         }
         libraryRootRepo.retire(root.id, now);
 
-        std::cout << "Retired " << root.absolutePath
-                  << " (no longer in [library].paths): removed " << removed
-                  << " track(s) from the library\n";
+        std::cout << "Retired " << root.absolutePath << " (no longer in [library].paths): removed "
+                  << removed << " track(s) from the library\n";
     }
 }
 
