@@ -40,7 +40,14 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSLocalNetworkUsageDescription: "MusicBox connects to your MusicBox server over your local Wi-Fi network to browse and stream your music library."
         NSAppTransportSecurity:
-          NSAllowsArbitraryLocalNetwork: true
+          # The real ATS key for "allow plain HTTP to LAN IPs and .local
+          # hostnames" is `NSAllowsLocalNetworking` -- `NSAllowsArbitraryLocalNetwork`
+          # isn't an Apple key at all and silently does nothing. Without this,
+          # plain HTTP to a literal IP (the server has no mDNS responder, so
+          # "musicbox.local" never resolves) is blocked by ATS on a real
+          # device; the Simulator enforces ATS more loosely, which is why this
+          # went unnoticed until now.
+          NSAllowsLocalNetworking: true
           NSExceptionDomains:
             musicbox.local:
               NSExceptionAllowsInsecureHTTPLoads: true
