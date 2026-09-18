@@ -13,8 +13,12 @@ struct QueueView: View {
             List {
                 if let current = viewModel.track, let currentIndex = playback.currentIndex {
                     Section("Now Playing") {
-                        QueueRow(track: current, isCurrent: true, artworkURL: viewModel.artworkURL(for: current))
-                            .onTapGesture { viewModel.playQueueItem(at: currentIndex) }
+                        Button {
+                            viewModel.playQueueItem(at: currentIndex)
+                        } label: {
+                            QueueRow(track: current, isCurrent: true, artworkURL: viewModel.artworkURL(for: current))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
@@ -22,8 +26,24 @@ struct QueueView: View {
                 if !upNext.isEmpty {
                     Section("Up Next") {
                         ForEach(upNext, id: \.offset) { entry in
-                            QueueRow(track: entry.track, isCurrent: false, artworkURL: viewModel.artworkURL(for: entry.track))
-                                .onTapGesture { viewModel.playQueueItem(at: entry.offset) }
+                            // A `Button`, not `.onTapGesture`: the list is
+                            // permanently in edit mode (see `.environment`
+                            // below) so that drag handles are always showing,
+                            // and edit mode swallows plain row taps —
+                            // buttons inside rows still fire.
+                            Button {
+                                viewModel.playQueueItem(at: entry.offset)
+                            } label: {
+                                QueueRow(track: entry.track, isCurrent: false, artworkURL: viewModel.artworkURL(for: entry.track))
+                            }
+                            .buttonStyle(.plain)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    viewModel.removeQueueItems(atOffsets: IndexSet([entry.offset]))
+                                } label: {
+                                    Label("Remove", systemImage: "minus.circle")
+                                }
+                            }
                         }
                         .onMove { source, destination in
                             let mappedSource = IndexSet(source.map { upNext[$0].offset })
@@ -31,9 +51,6 @@ struct QueueView: View {
                                 ? upNext[destination].offset
                                 : playback.queue.count
                             viewModel.moveQueueItems(fromOffsets: mappedSource, toOffset: mappedDestination)
-                        }
-                        .onDelete { offsets in
-                            viewModel.removeQueueItems(atOffsets: IndexSet(offsets.map { upNext[$0].offset }))
                         }
                     }
                 } else if viewModel.track != nil {
@@ -43,14 +60,15 @@ struct QueueView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            // Always editable, so every Up Next row carries a drag handle
+            // without the user first having to find an Edit button — matching
+            // Apple Music's queue. `.onMove` does nothing outside edit mode.
+            .environment(\.editMode, .constant(.active))
             .navigationTitle("Up Next")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    EditButton()
                 }
             }
         }
