@@ -47,6 +47,10 @@ config/local.toml
 *.db-wal
 *.db-shm
 
+# Downloaded real-audio test fixtures, and the script that fetches them
+/test_data/
+/scripts/download_test_music.py
+
 # Xcode
 client-ios/**/xcuserdata/
 client-ios/**/DerivedData/
