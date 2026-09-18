@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -192,6 +193,38 @@ void runServer(const musicbox::config::Config& config) {
 // `scan`
 // ---------------------------------------------------------------------------
 
+// A root that's been dropped from [library].paths isn't "missing files" -- the
+// scanner never visits it, so its tracks would otherwise keep being served
+// forever. Retire the root and soft-delete its tracks (soft, so playlist
+// entries referencing them survive and re-adding the path revives everything).
+void retireUnconfiguredRoots(const musicbox::config::Config& config,
+                             musicbox::db::LibraryRootRepository& libraryRootRepo,
+                             musicbox::db::TrackRepository& trackRepo) {
+    const auto now = std::chrono::system_clock::now();
+
+    for (const auto& root : libraryRootRepo.list()) {
+        const auto& paths = config.library.paths;
+        if (std::find(paths.begin(), paths.end(), root.absolutePath) != paths.end()) {
+            continue;
+        }
+
+        std::size_t removed = 0;
+        for (const auto& track : trackRepo.listByLibraryRoot(root.id)) {
+            if (track.deletedAt) {
+                continue;
+            }
+            if (trackRepo.softDelete(track.id, now)) {
+                ++removed;
+            }
+        }
+        libraryRootRepo.retire(root.id, now);
+
+        std::cout << "Retired " << root.absolutePath
+                  << " (no longer in [library].paths): removed " << removed
+                  << " track(s) from the library\n";
+    }
+}
+
 int runScan(const musicbox::config::Config& config) {
     using namespace musicbox;
 
@@ -223,6 +256,8 @@ int runScan(const musicbox::config::Config& config) {
                   << " unchanged=" << result.unchanged << " deleted=" << result.deleted
                   << " skipped=" << result.skippedUnreadable << '\n';
     }
+
+    retireUnconfiguredRoots(config, *libraryRootRepo, *trackRepo);
     return 0;
 }
 
