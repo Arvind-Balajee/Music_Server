@@ -93,8 +93,7 @@ final class PlaybackController: ObservableObject {
     func play(tracks: [Track], startIndex: Int = 0) {
         guard tracks.indices.contains(startIndex) else { return }
         queue = tracks
-        shuffleOrder = Array(tracks.indices)
-        if shuffleEnabled { shuffleOrder.shuffle() }
+        reindexShuffleOrder()
         currentIndex = startIndex
         loadCurrentItem(autoplay: true)
     }
@@ -143,8 +142,7 @@ final class PlaybackController: ObservableObject {
 
     func setShuffle(_ enabled: Bool) {
         shuffleEnabled = enabled
-        shuffleOrder = Array(queue.indices)
-        if enabled { shuffleOrder.shuffle() }
+        reindexShuffleOrder()
     }
 
     func setRepeatMode(_ mode: RepeatMode) {
@@ -165,6 +163,31 @@ final class PlaybackController: ObservableObject {
         loadCurrentItem(autoplay: true)
     }
 
+    /// Inserts `track` to play immediately after the current one, without
+    /// interrupting playback -- Apple Music's "Play Next". If nothing is
+    /// currently playing, starts playing `track` immediately instead (there's
+    /// no "current" position to insert after).
+    func playNext(_ track: Track) {
+        guard let currentIndex else {
+            play(track: track)
+            return
+        }
+        queue.insert(track, at: currentIndex + 1)
+        reindexShuffleOrder()
+    }
+
+    /// Appends `track` to the end of the queue -- Apple Music's "Add to
+    /// Queue" / "Play Later". If nothing is currently playing, starts
+    /// playing `track` immediately instead (there's no queue to append to).
+    func addToQueue(_ track: Track) {
+        guard currentIndex != nil else {
+            play(track: track)
+            return
+        }
+        queue.append(track)
+        reindexShuffleOrder()
+    }
+
     /// Reorders the queue (SwiftUI `List.onMove` signature). Keeps
     /// `currentIndex` pointing at the same *track*, not the same slot, so
     /// dragging rows around never changes what's currently playing.
@@ -174,8 +197,7 @@ final class PlaybackController: ObservableObject {
         if let playingTrackId {
             currentIndex = queue.firstIndex(where: { $0.id == playingTrackId })
         }
-        shuffleOrder = Array(queue.indices)
-        if shuffleEnabled { shuffleOrder.shuffle() }
+        reindexShuffleOrder()
     }
 
     /// Removes rows from the queue (SwiftUI `List.onDelete` signature). Removing
@@ -191,6 +213,12 @@ final class PlaybackController: ObservableObject {
             player.replaceCurrentItem(with: nil)
             isPlaying = false
         }
+        reindexShuffleOrder()
+    }
+
+    /// Resets shuffle playback order to match the current queue contents
+    /// (re-shuffled if shuffle is on). Called after any queue mutation.
+    private func reindexShuffleOrder() {
         shuffleOrder = Array(queue.indices)
         if shuffleEnabled { shuffleOrder.shuffle() }
     }

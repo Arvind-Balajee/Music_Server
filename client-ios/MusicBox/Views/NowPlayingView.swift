@@ -22,12 +22,21 @@ struct NowPlayingView: View {
             background
 
             VStack(spacing: 0) {
-                grabber
-                topBar
-                Spacer(minLength: 8)
-                artwork
-                Spacer(minLength: 28)
-                titleArtist
+                // Only the upper chrome (grabber/top bar/artwork/title) carries
+                // the swipe-down-to-dismiss gesture -- see `dismissGesture`'s
+                // doc comment for why it must NOT extend over the scrubber,
+                // transport controls, or the volume slider below.
+                VStack(spacing: 0) {
+                    grabber
+                    topBar
+                    Spacer(minLength: 8)
+                    artwork
+                    Spacer(minLength: 28)
+                    titleArtist
+                }
+                .contentShape(Rectangle())
+                .simultaneousGesture(dismissGesture)
+
                 progressSection
                     .padding(.top, 20)
                 controlsRow
@@ -44,10 +53,6 @@ struct NowPlayingView: View {
         }
         .foregroundStyle(.white)
         .offset(y: max(0, dragOffset))
-        // `.simultaneousGesture` so this doesn't steal taps away from the
-        // buttons/scrubber/sliders nested inside (see the same fix in
-        // `MiniPlayerBar`).
-        .simultaneousGesture(dismissGesture)
         .sheet(isPresented: $showQueue) {
             QueueView(playback: playback, viewModel: viewModel)
         }
@@ -162,7 +167,7 @@ struct NowPlayingView: View {
 
     private var progressSection: some View {
         VStack(spacing: 6) {
-            Scrubber(progress: scrubProgress ?? viewModel.progress) { fraction in
+            CapsuleSlider(value: scrubProgress ?? viewModel.progress) { fraction in
                 scrubProgress = fraction
             } onEnded: { fraction in
                 viewModel.seek(to: fraction * viewModel.duration)
@@ -227,7 +232,6 @@ struct NowPlayingView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.white.opacity(0.6))
             SystemVolumeSlider()
-                .frame(height: 24)
             Image(systemName: "speaker.wave.3.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(.white.opacity(0.6))
@@ -254,6 +258,10 @@ struct NowPlayingView: View {
 
     // MARK: - Dismiss gesture
 
+    /// Attached only to the top chrome (see `body`), never to the whole
+    /// screen: a `DragGesture` recognizer covering `volumeRow` fought with
+    /// `SystemVolumeSlider`'s embedded `MPVolumeView` for the same drag touch
+    /// and made the volume slider undraggable, even as `.simultaneousGesture`.
     private var dismissGesture: some Gesture {
         DragGesture(minimumDistance: 12)
             .updating($dragOffset) { value, state, _ in
@@ -268,38 +276,3 @@ struct NowPlayingView: View {
     }
 }
 
-/// Thin capsule scrubber, matching Apple Music's Now Playing progress bar: no
-/// persistent knob, the fill thickens slightly while actively dragging.
-private struct Scrubber: View {
-    let progress: Double
-    let onChanged: (Double) -> Void
-    let onEnded: (Double) -> Void
-
-    @State private var isDragging = false
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.white.opacity(0.25))
-                Capsule().fill(Color.white)
-                    .frame(width: max(6, proxy.size.width * min(max(progress, 0), 1)))
-            }
-            .frame(height: isDragging ? 8 : 4)
-            .animation(.easeOut(duration: 0.12), value: isDragging)
-            .frame(maxHeight: .infinity, alignment: .center)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        isDragging = true
-                        onChanged(min(max(value.location.x / proxy.size.width, 0), 1))
-                    }
-                    .onEnded { value in
-                        isDragging = false
-                        onEnded(min(max(value.location.x / proxy.size.width, 0), 1))
-                    }
-            )
-        }
-        .frame(height: 20)
-    }
-}

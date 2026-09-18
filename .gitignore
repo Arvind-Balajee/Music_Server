@@ -18,6 +18,10 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 
+# Scratch space for agent/dev tooling (screenshots, exported test attachments,
+# generated assets) -- never committed.
+/tmp/
+
 # macOS
 .DS_Store
 

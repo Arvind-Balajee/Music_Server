@@ -38,6 +38,9 @@ struct TrackRow: View {
     var showAlbum: Bool = true
     var onPlay: (() -> Void)? = nil
 
+    @EnvironmentObject private var environment: AppEnvironment
+    @State private var showAddToPlaylist = false
+
     var body: some View {
         HStack(spacing: 12) {
             Button {
@@ -70,6 +73,26 @@ struct TrackRow: View {
                 .foregroundStyle(.secondary)
         }
         .contentShape(Rectangle())
+        .contextMenu {
+            Button {
+                environment.playback.playNext(track)
+            } label: {
+                Label("Play Next", systemImage: "text.insert")
+            }
+            Button {
+                environment.playback.addToQueue(track)
+            } label: {
+                Label("Add to Queue", systemImage: "text.append")
+            }
+            Button {
+                showAddToPlaylist = true
+            } label: {
+                Label("Add to Playlist", systemImage: "plus")
+            }
+        }
+        .sheet(isPresented: $showAddToPlaylist) {
+            AddToPlaylistSheet(viewModel: AddToPlaylistViewModel(track: track, repository: environment.playlistRepository))
+        }
     }
 
     private var formattedDuration: String {
