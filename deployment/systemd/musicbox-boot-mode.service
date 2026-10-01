@@ -1,0 +1,20 @@
+[Unit]
+Description=MusicBox boot-time mode selector (home Wi-Fi vs standalone AP)
+Documentation=file:///opt/musicbox/scripts/musicbox-boot-mode.sh
+# Needs NetworkManager up so nmcli/autoconnect have already had a chance to
+# run, and local filesystems mounted before we try to mount the SSD.
+After=NetworkManager.service local-fs.target
+Wants=NetworkManager-wait-online.service
+After=NetworkManager-wait-online.service
+# musicbox.service itself should NOT be systemctl-enabled (see the script's
+# header comment) — this unit starts/stops it directly instead. Deliberately
+# no Before=musicbox.service: the script's blocking `systemctl start musicbox`
+# would then wait on this unit finishing, which waits on the script — deadlock.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/musicbox/scripts/musicbox-boot-mode.sh
+
+[Install]
+WantedBy=multi-user.target
